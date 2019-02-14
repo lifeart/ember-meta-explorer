@@ -65,6 +65,9 @@ export function extractComponentInformationFromMeta(meta: any) {
   //   return result;
   // }, {});
 
+  if (!('unknownProps' in meta)) {
+    meta.unknownProps = [];
+  }
   eachValue(meta.computeds, value => {
     componentInformation.jsComputeds.push(value);
   });
@@ -110,12 +113,14 @@ export function extractComponentInformationFromMeta(meta: any) {
   eachValue(meta.imports, value => {
     componentInformation.jsImports.push(value);
   });
+
   eachValue(meta.properties, value => {
     const localName = value.split(".")[1];
     // @danger!
     meta.unknownProps.push(localName);
     componentInformation.hbsProps.push(value);
   });
+
   eachValue(meta.arguments, value => {
     const localName = value.split(".")[0].replace("@", "");
     // @danger!

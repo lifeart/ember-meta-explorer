@@ -247,7 +247,9 @@ function resetJSMeta() {
 export function processJSFile(data: string, relativePath: string) {
   resetJSMeta();
   const options = {
-    plugins: [componentAnalyzer]
+	plugins: [componentAnalyzer],
+	// presets: ["@babel/preset-typescript"],
+	// sourceType: "module"
   };
   const meta = transform(data, options).metadata;
   meta.imports = meta.imports.map((imp: string) => {
