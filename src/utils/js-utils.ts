@@ -88,10 +88,16 @@ let componentAnalyzer = function() {
         }
       },
       ExportNamedDeclaration(path: any) {
+        if (!path.node.source) {
+          return;
+        }
         const source = path.node.source.value;
         jsMeta.exports.push(source);
       },
       ImportDeclaration(path: any) {
+        if (!path.node.source) {
+          return;
+        }
         const source = path.node.source.value;
         jsMeta.imports.push(source);
       },
@@ -105,7 +111,9 @@ let componentAnalyzer = function() {
         });
       },
       ObjectProperty(path: any) {
-        const isValidParent = !path.scope.parent || path.node.__IS_VALID_EMBER_COMPOENENT_OBJECT_PROPERTY;
+        const isValidParent =
+          !path.scope.parent ||
+          path.node.__IS_VALID_EMBER_COMPOENENT_OBJECT_PROPERTY;
         if (path.parent.type === "ObjectExpression" && isValidParent) {
           const valueType = path.node.value.type;
           const name = path.node.key.name;
@@ -199,6 +207,10 @@ let componentAnalyzer = function() {
           } else if (valueType === "StringLiteral") {
             jsMeta.props.push(`${name} = "${path.node.value.value}"`);
           } else if (valueType === "BooleanLiteral") {
+            // if it's TS Bug:  "value = true", don't know hot it's appear
+            if (path.parent.properties.length === 1 && name === "value" && path.node.value.value === true) {
+              return;
+            }
             jsMeta.props.push(`${name} = ${path.node.value.value}`);
           } else if (valueType === "NullLiteral") {
             jsMeta.props.push(`${name} = null `);
@@ -247,9 +259,13 @@ function resetJSMeta() {
 export function processJSFile(data: string, relativePath: string) {
   resetJSMeta();
   const options = {
-	plugins: [componentAnalyzer],
-	// presets: ["@babel/preset-typescript"],
-	// sourceType: "module"
+    presets: ["@babel/env", "@babel/typescript"],
+    plugins: [
+      "@babel/proposal-class-properties",
+      "@babel/proposal-object-rest-spread",
+      componentAnalyzer
+    ],
+    filename: '',
   };
   const meta = transform(data, options).metadata;
   meta.imports = meta.imports.map((imp: string) => {

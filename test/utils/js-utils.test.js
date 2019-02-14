@@ -168,11 +168,11 @@ export default class AbstractControlsTableMetaMenu extends Component.extend({
 	`;
 
 	let result = null;
-	try {
+	// try {
 		result = processJSFile(example, 'empty');
-	} catch(e) {
-		result = JSON.stringify(e);
-	}
+	// } catch(e) {
+	// 	result = JSON.stringify(e);
+	// }
 	assert(result, JSON.stringify({"pos":478,"loc":{"line":17,"column":17},"code":"BABEL_PARSE_ERROR"}));
 });
 
