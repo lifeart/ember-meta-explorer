@@ -1,4 +1,4 @@
-import { transform } from '@bebel/core';
+import { transform } from '@babel/core';
 import { join, sep} from 'path';
 import { existsSync } from 'fs';
 import { serializePath, normalizePath  } from './file-utils';
