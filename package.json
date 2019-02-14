@@ -9,8 +9,9 @@
   ],
   "scripts": {
     "test": "jest",
-    "prepare": "npm run build",
-    "build": "ts-node -p tsconfig.build.json"
+    "prepare": "npm run clean && npm run build",
+    "clean": "rm -rf dist; mkdir dist",
+    "build": "tsc -p tsconfig.build.json"
   },
   "repository": {
     "type": "git",
@@ -35,8 +36,7 @@
     "@types/jest": "^24.0.4",
     "@types/node": "^7.0.18",
     "jest": "^24.1.0",
-    "ts-node": "^8.0.2",
-    "typescript": "~2.9.2"
+    "typescript": "~2.4.0"
   },
   "dependencies": {
     "@babel/core": "^7.2.2",
