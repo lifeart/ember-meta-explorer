@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "test": "jest",
+    "test": "jest --no-watchman",
     "clean": "rm -rf dist; mkdir dist",
     "build": "tsc -p tsconfig.build.json"
   },
