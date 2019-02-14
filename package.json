@@ -30,12 +30,12 @@
   },
   "homepage": "https://github.com/lifeart/ember-meta-explorer#readme",
   "devDependencies": {
-    "@types/debug": "^0.0.30",
-    "@types/jest": "^2.2.41",
-    "@types/node": "^7.0.18",
-    "jest": "^3.4.1",
-    "ts-node": "^5.0.1",
-    "typescript": "~2.4.0"
+    "@types/debug": "^4.1.1",
+    "@types/jest": "^24.0.4",
+    "@types/node": "^11.9.3",
+    "jest": "^24.1.0",
+    "ts-node": "^8.0.2",
+    "typescript": "~3.3.3"
   },
   "dependencies": {
 
