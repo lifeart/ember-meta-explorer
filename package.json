@@ -9,7 +9,6 @@
   ],
   "scripts": {
     "test": "jest",
-    "prepare": "npm run clean && npm run build",
     "clean": "rm -rf dist; mkdir dist",
     "build": "tsc -p tsconfig.build.json"
   },
