@@ -10,7 +10,7 @@
   "scripts": {
     "test": "jest",
     "prepare": "npm run build",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "ts-node -p tsconfig.build.json"
   },
   "repository": {
     "type": "git",
@@ -36,7 +36,7 @@
     "@types/node": "^7.0.18",
     "jest": "^24.1.0",
     "ts-node": "^8.0.2",
-    "typescript": "~3.3.3"
+    "typescript": "~2.9.2"
   },
   "dependencies": {
     "@babel/core": "^7.2.2",
