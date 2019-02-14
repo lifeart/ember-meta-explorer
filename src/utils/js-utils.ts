@@ -1,40 +1,40 @@
-import { transform } from '@babel/core';
-import { join, sep} from 'path';
-import { existsSync } from 'fs';
-import { serializePath, normalizePath  } from './file-utils';
+import { transform } from "@babel/core";
+import { join, sep } from "path";
+import { existsSync } from "fs";
+import { serializePath, normalizePath } from "./file-utils";
 
 interface IJsMeta {
   actions: string[];
-    imports:  string[];
-    tagNames:  string[];
-    functions:  string[];
-    computeds:  string[];
-    props:  string[];
-    unknownProps:  string[];
-    attributeBindings:  string[];
-    positionalParams:  string[];
-    concatenatedProperties:  string[];
-    mergedProperties:  string[];
-    classNameBindings:  string[];
-    classNames:  string[];
-    exports:  string[];
+  imports: string[];
+  tagNames: string[];
+  functions: string[];
+  computeds: string[];
+  props: string[];
+  unknownProps: string[];
+  attributeBindings: string[];
+  positionalParams: string[];
+  concatenatedProperties: string[];
+  mergedProperties: string[];
+  classNameBindings: string[];
+  classNames: string[];
+  exports: string[];
 }
 
 let jsMeta: IJsMeta = {
   actions: [],
-    imports: [],
-    tagNames: [],
-    functions: [],
-    computeds: [],
-    props: [],
-    unknownProps: [],
-    attributeBindings: [],
-    positionalParams: [],
-    concatenatedProperties: [],
-    mergedProperties: [],
-    classNameBindings: [],
-    classNames: [],
-    exports: []
+  imports: [],
+  tagNames: [],
+  functions: [],
+  computeds: [],
+  props: [],
+  unknownProps: [],
+  attributeBindings: [],
+  positionalParams: [],
+  concatenatedProperties: [],
+  mergedProperties: [],
+  classNameBindings: [],
+  classNames: [],
+  exports: []
 };
 
 function extractActions(path: any) {
@@ -66,6 +66,22 @@ let componentAnalyzer = function() {
   return {
     pre() {},
     visitor: {
+      ClassDeclaration(path) {
+        if (
+          path.node.superClass &&
+          path.node.superClass.type === "CallExpression"
+        ) {
+          (path.node.superClass.arguments || []).forEach((arg: any) => {
+            if (arg.type === "ObjectExpression") {
+              (arg.properties || []).forEach((a: any) => {
+                if (a.type === "ObjectProperty") {
+                  a.__IS_VALID_EMBER_COMPOENENT_OBJECT_PROPERTY = true;
+                }
+              });
+            }
+          });
+        }
+      },
       Program(path: any) {
         if (looksLikeReexport(path)) {
           jsMeta.exports.push(path.node.body[0].source.value);
@@ -89,7 +105,8 @@ let componentAnalyzer = function() {
         });
       },
       ObjectProperty(path: any) {
-        if (path.parent.type === "ObjectExpression" && !path.scope.parent) {
+        const isValidParent = !path.scope.parent || path.node.__IS_VALID_EMBER_COMPOENENT_OBJECT_PROPERTY;
+        if (path.parent.type === "ObjectExpression" && isValidParent) {
           const valueType = path.node.value.type;
           const name = path.node.key.name;
           const valueElements = path.node.value.elements || [];
@@ -116,7 +133,9 @@ let componentAnalyzer = function() {
 
             jsMeta.classNameBindings = valueElements.map((el: any) => el.value);
           } else if (name === "concatenatedProperties") {
-            jsMeta.concatenatedProperties = valueElements.map((el: any) => el.value);
+            jsMeta.concatenatedProperties = valueElements.map(
+              (el: any) => el.value
+            );
           } else if (name === "mergedProperties") {
             jsMeta.mergedProperties = valueElements.map((el: any) => el.value);
           } else if (name === "positionalParams") {
@@ -142,7 +161,7 @@ let componentAnalyzer = function() {
                 : "<UNKNOWN>";
               postfix = path.node.value.callee.property.name + "()";
 
-              path.node.value.callee.object.arguments.forEach((arg : any) => {
+              path.node.value.callee.object.arguments.forEach((arg: any) => {
                 if (arg.type === "StringLiteral") {
                   jsMeta.unknownProps.push(arg.value);
                   ar.push(`'${arg.value}'`);
@@ -150,7 +169,7 @@ let componentAnalyzer = function() {
               });
             }
 
-            path.node.value.arguments.forEach((arg : any) => {
+            path.node.value.arguments.forEach((arg: any) => {
               if (arg.type === "StringLiteral") {
                 jsMeta.unknownProps.push(arg.value);
                 ar.push(`'${arg.value}'`);
