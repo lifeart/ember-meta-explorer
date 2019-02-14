@@ -1,0 +1,43 @@
+{
+  "name": "glimmer-analyzer",
+  "version": "0.0.1",
+  "description": "Statically analyzes ember project source for dependency trees and other information.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "jest",
+    "prepare": "npm run build",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lifeart/ember-meta-explorer.git"
+  },
+  "keywords": [
+    "glimmer",
+	"ember",
+    "static",
+    "analysis",
+    "handlebars"
+  ],
+  "author": "Aleksandr Kanunnikov <lefeart92@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lifeart/ember-meta-explorer/issues"
+  },
+  "homepage": "https://github.com/lifeart/ember-meta-explorer#readme",
+  "devDependencies": {
+    "@types/debug": "^0.0.30",
+    "@types/jest": "^2.2.41",
+    "@types/node": "^7.0.18",
+    "jest": "^3.4.1",
+    "ts-node": "^5.0.1",
+    "typescript": "~2.4.0"
+  },
+  "dependencies": {
+
+  }
+}
