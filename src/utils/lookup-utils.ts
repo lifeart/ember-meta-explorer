@@ -186,6 +186,18 @@ function getRoutesFolders(root: string) {
   }
 }
 
+function extractRouteNameFromNormalizedPath(filePath: string) {
+  return filePath
+    .split("/")
+    .reduce((result: string[], pathPart: string) => {
+      if (!pathPart.includes(".")) {
+        result.push(pathPart);
+      }
+      return result;
+    }, [])
+    .join(".");
+}
+
 function getMURoutes(root) {
   const paths: string[] = safeWalkSync(join(root, "src", "ui", "routes"), {
     directories: false,
@@ -193,20 +205,12 @@ function getMURoutes(root) {
   });
   return paths
     .filter((name: string) => {
-      return !name.includes('/-components/');
+      return !name.includes("/-components/");
     })
     .map(validPath => {
       return {
         path: validPath,
-        label: validPath
-          .split('/')
-          .reduce((result: string[], pathPart: string) => {
-            if (!pathPart.includes(".")) {
-              result.push(pathPart);
-            }
-            return result;
-          }, [])
-          .join(".")
+        label: extractRouteNameFromNormalizedPath(validPath)
       };
     });
 }
@@ -226,7 +230,7 @@ function listRoutes(root: string): any[] {
   });
 
   const items = paths.map((filePath: string) => {
-    const label = filePath.replace(extname(filePath), "").replace(/\//g, ".");
+    const label = extractRouteNameFromNormalizedPath(filePath)
     return {
       path: filePath,
       label
