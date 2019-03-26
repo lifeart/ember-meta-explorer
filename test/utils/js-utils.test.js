@@ -173,7 +173,23 @@ export default class AbstractControlsTableMetaMenu extends Component.extend({
 	} catch(e) {
 		result = JSON.stringify(e);
 	}
-	assert(result, JSON.stringify({"pos":478,"loc":{"line":17,"column":17},"code":"BABEL_PARSE_ERROR"}));
+	const expectedResult = {
+		"actions": ["sendEmail(name, message)"], 
+		"attributeBindings": [], 
+		"classNameBindings": [], 
+		"classNames": [], 
+		"computeds": ["halfHeadingSize = computed('heading.length', fn() {...})"], 
+		"concatenatedProperties": [], 
+		"exports": [], 
+		"functions": ["sendEmail(name, message)"], 
+		"imports": ["@ember/component", "@ember/object"], 
+		"mergedProperties": [], 
+		"positionalParams": [], 
+		"props": ["heading = null "], 
+		"tagNames": [""], 
+		"unknownProps": ["heading.length"]
+	};
+	assert(result, expectedResult);
 });
 
 function assert(left, right) {
