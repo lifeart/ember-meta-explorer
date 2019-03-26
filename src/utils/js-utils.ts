@@ -88,10 +88,16 @@ let componentAnalyzer = function() {
         }
       },
       ExportNamedDeclaration(path: any) {
+		if (!path.node.source) {
+			return;
+		}
         const source = path.node.source.value;
         jsMeta.exports.push(source);
       },
       ImportDeclaration(path: any) {
+		if (!path.node.source) {
+			return;
+		}
         const source = path.node.source.value;
         jsMeta.imports.push(source);
       },
@@ -244,14 +250,23 @@ function resetJSMeta() {
   };
 }
 
+
+const babelOptions = {
+	"presets": [
+		"@babel/typescript"
+	],
+	"plugins": [
+		"@babel/plugin-proposal-decorators",
+		["@babel/proposal-class-properties", { "loose": true }],
+		"@babel/proposal-object-rest-spread",
+		componentAnalyzer
+	],
+	sourceType: "module"
+};
+
 export function processJSFile(data: string, relativePath: string) {
   resetJSMeta();
-  const options = {
-	plugins: [componentAnalyzer],
-	// presets: ["@babel/preset-typescript"],
-	// sourceType: "module"
-  };
-  const meta = transform(data, options).metadata;
+  const meta = transform(data, babelOptions).metadata;
   meta.imports = meta.imports.map((imp: string) => {
     const paths = relativePath.split(sep);
     const base = imp.split("/")[0];
