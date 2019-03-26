@@ -1,6 +1,6 @@
 {
   "name": "ember-meta-explorer",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "description": "Statically analyzes ember project source for dependency trees and other information.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,8 +9,13 @@
   ],
   "scripts": {
     "test": "jest --no-watchman",
-    "clean": "rm -rf dist; mkdir dist",
-    "build": "babel src --out-dir dist --extensions \".ts\""
+    "clean": "rm -rf dist",
+    "create-dist": "mkdir dist",
+    "build:types-legacy": "tsc -d",
+    "build:types": "tsc ./src/index.ts --skipLibCheck --outFile ./dist/index.js --declaration --module system",
+    "remove-index": "rm -rf dist/index.js",
+    "build": "babel src --out-dir dist --extensions \".ts\"",
+    "compile": "npm run clean && npm run create-dist && npm run build:types && npm run remove-index && npm run build"
   },
   "repository": {
     "type": "git",
@@ -30,12 +35,13 @@
   },
   "homepage": "https://github.com/lifeart/ember-meta-explorer#readme",
   "devDependencies": {
+    "@babel/types": "~7.4.0",
     "@types/babel-core": "^6.25.6",
-    "@types/debug": "^0.0.30",
-    "@types/jest": "^24.0.4",
-    "@types/node": "^7.0.18",
-    "jest": "^24.1.0",
-    "typescript": "~2.4.0"
+    "@types/debug": "^4.1.2",
+    "@types/jest": "^24.0.11",
+    "@types/node": "^11.11.8",
+    "jest": "^24.5.0",
+    "typescript": "3.3.4000"
   },
   "dependencies": {
     "@babel/cli": "^7.2.3",
@@ -45,7 +51,7 @@
     "@babel/plugin-proposal-object-rest-spread": "^7.4.0",
     "@babel/preset-typescript": "^7.3.3",
     "@babel/preset-env": "^7.4.2",
-    "@glimmer/syntax": "^0.39.2",
+    "@glimmer/syntax": "^0.39.3",
     "walk-sync": "^1.1.3"
   }
 }

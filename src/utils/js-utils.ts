@@ -4,7 +4,7 @@ import { join, sep } from "path";
 import { existsSync } from "fs";
 import { serializePath, normalizePath } from "./file-utils";
 
-interface IJsMeta {
+export interface IJsMeta {
   actions: string[];
   imports: string[];
   tagNames: string[];
@@ -300,7 +300,7 @@ const babelOptions = {
 
 export function processJSFile(data: string, relativePath: string) {
   resetJSMeta();
-  const ast = parseSync(data, babelOptions);
+  const ast = parseSync(data, (babelOptions as any));
   traverse(ast, componentAnalyzer());
   const meta = jsMeta;
   //   meta.code = result.code;
