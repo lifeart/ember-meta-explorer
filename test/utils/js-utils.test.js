@@ -140,7 +140,7 @@ export default class AbstractControlsTableMetaMenu extends Component.extend({
 });
 
 
-it('fails on ts files with types', () => {
+it('not fails on ts files with types', () => {
 	const example = `
 import Component from '@ember/component';
 import { computed } from '@ember/object';
@@ -190,6 +190,67 @@ export default class AbstractControlsTableMetaMenu extends Component.extend({
 		"unknownProps": ["heading.length"]
 	};
 	assert(result, expectedResult);
+});
+
+it('can handle class properties', ()=>{
+	const input = `class Rectangle extends FooBar {
+		public name: number = 42;
+		public attributeBindings: string[] = ['foo:bar'];
+		public classNameBindings = ['foo-bar'];
+		tagName = 'head';
+		@computed
+		get name() {
+			return 42;
+		}
+	  
+		get user() {
+			return 42;
+		}
+	  
+		hello() {
+		}
+
+		@action
+		boo() {
+		}
+	  }`;
+
+	const expectedResult = {
+		"actions": [
+		 "boo()",
+		],
+		"attributeBindings": [
+		 "foo:bar",
+		],
+		"classNameBindings": [
+		 "foo-bar",
+		],
+		"classNames": [],
+		"computeds": [
+		 "name = get fn()",
+		 "user = get fn()",
+		],
+		"concatenatedProperties": [],
+		"exports": [],
+		"functions": [
+		 "hello()",
+		],
+		"imports": [],
+		"mergedProperties": [],
+		"positionalParams": [],
+		"props": [
+		 "name = 42",
+		],
+		"tagNames": [
+		 "head",
+		],
+		"unknownProps": [
+		 "foo",
+		 "foo-bar",
+		],
+	};
+
+	assert(processJSFile(input, 'empty'), expectedResult);
 });
 
 function assert(left, right) {
