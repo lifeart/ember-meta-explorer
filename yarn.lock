@@ -3126,11 +3126,6 @@ npmlog@^4.0.2:
     gauge "~2.7.3"
     set-blocking "~2.0.0"
 
-ntypescript@1.201706190042.1:
-  version "1.201706190042.1"
-  resolved "https://registry.yarnpkg.com/ntypescript/-/ntypescript-1.201706190042.1.tgz#866ae9cc36688b141606156ed0bcc35cdf536271"
-  integrity sha1-hmrpzDZoixQWBhVu0LzDXN9TYnE=
-
 number-is-nan@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/number-is-nan/-/number-is-nan-1.0.1.tgz#097b602b53422a522c1afb8790318336941a011d"

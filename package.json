@@ -30,12 +30,6 @@
   },
   "homepage": "https://github.com/lifeart/ember-meta-explorer#readme",
   "devDependencies": {
-    "@babel/cli": "^7.2.3",
-    "@babel/core": "^7.4.0",
-    "@babel/plugin-proposal-class-properties": "^7.4.0",
-    "@babel/plugin-proposal-decorators": "^7.4.0",
-    "@babel/plugin-proposal-object-rest-spread": "^7.4.0",
-    "@babel/preset-typescript": "^7.3.3",
     "@types/babel-core": "^6.25.6",
     "@types/debug": "^0.0.30",
     "@types/jest": "^24.0.4",
@@ -44,6 +38,12 @@
     "typescript": "~2.4.0"
   },
   "dependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.4.0",
+    "@babel/plugin-proposal-class-properties": "^7.4.0",
+    "@babel/plugin-proposal-decorators": "^7.4.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.4.0",
+    "@babel/preset-typescript": "^7.3.3",
     "@babel/preset-env": "^7.4.2",
     "@glimmer/syntax": "^0.39.2",
     "walk-sync": "^1.1.3"

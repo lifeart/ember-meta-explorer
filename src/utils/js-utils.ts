@@ -259,6 +259,9 @@ const babelOptions = {
 		"@babel/proposal-object-rest-spread"
 	],
 	sourceType: "module",
+	// parserOpts: {
+	// 	'tsConfig': '12'
+	// },
 	filename: Math.random() + '-.ts'
 };
 
