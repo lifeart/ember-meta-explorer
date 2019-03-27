@@ -1,4 +1,5 @@
-import { preprocess } from "@glimmer/syntax";
+const syntax = require("@glimmer/syntax");
+const { preprocess } = syntax;
 
 type THbsMetaKey =
   | "paths"
