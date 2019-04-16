@@ -295,6 +295,9 @@ const babelOptions = {
   // parserOpts: {
   // 	'tsConfig': '12'
   // },
+  babelrc: false,
+  configFile: false,
+  cwd: __dirname,
   filename: Math.random() + "-.ts"
 };
 
