@@ -301,6 +301,10 @@ const babelOptions = {
   filename: Math.random() + "-.ts"
 };
 
+export function parseScriptFile(data: string, secondaryBabelOptions?: {}) {
+  return parseSync(data, (Object.assign({}, babelOptions, secondaryBabelOptions) as any));
+}
+
 export function processJSFile(data: string, relativePath: string) {
   resetJSMeta();
   const ast = parseSync(data, (babelOptions as any));

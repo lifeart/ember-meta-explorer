@@ -39,3 +39,4 @@ export interface IComponentMetaInformation {
 export function extractComponentInformationFromMeta(meta: any): IComponentMetaInformation;
 export function processTemplate(template: string): any;
 export function processJSFile(data: string, relativePath: string): IJsMeta;
+export function parseScriptFile(data: string, babelOptions?: object): any;
