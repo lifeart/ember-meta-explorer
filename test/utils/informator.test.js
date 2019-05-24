@@ -17,7 +17,7 @@ it('ts: can get info for property without value and with decorator', ()=>{
 		}
     `;
     const { jsProps } = compile(input);
-	assert(jsProps, ['n = ?']);
+	assert(jsProps, ['n = undefined']);
 });
 
 it('ts: can get info for property without value. with any type and with decorator', ()=>{
@@ -28,7 +28,7 @@ it('ts: can get info for property without value. with any type and with decorato
 		}
     `;
     const { jsProps } = compile(input);
-	assert(jsProps, ['n : any = ?']);
+	assert(jsProps, ['n = <any>']);
 });
 
 it('ts: can get info for property without value. with propert type and with decorator', ()=>{
@@ -39,7 +39,7 @@ it('ts: can get info for property without value. with propert type and with deco
 		}
     `;
     const { jsProps } = compile(input);
-	assert(jsProps, ['n : Task = ?']);
+	assert(jsProps, ['n = <Task>']);
 });
 
 

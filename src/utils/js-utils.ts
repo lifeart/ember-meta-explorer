@@ -76,9 +76,9 @@ function propExtractor(path) {
       }
     }
     if (value !== '') {
-      jsMeta.props.push(`${name} : ${value} = ?`);
+      jsMeta.props.push(`${name} = <${value}>`);
     } else {
-      jsMeta.props.push(`${name} = ?`);
+      jsMeta.props.push(`${name} = undefined`);
     }
     
     return;

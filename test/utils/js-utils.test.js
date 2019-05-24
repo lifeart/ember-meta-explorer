@@ -263,7 +263,7 @@ it('can handle valueless decorated props with types', ()=>{
 	`;
 	assert(cleanupEmptyArrays(processJSFile(input, 'empty')), {
 		props: [
-			"n : Moo = ?"
+			"n = <Moo>"
 		]
 	});
 });
@@ -277,7 +277,7 @@ it('can handle valueless decorated props without types', ()=>{
 	`;
 	assert(cleanupEmptyArrays(processJSFile(input, 'empty')), {
 		props: [
-			"n = ?"
+			"n = undefined"
 		]
 	});
 });
