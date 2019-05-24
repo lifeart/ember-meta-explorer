@@ -62,9 +62,35 @@ function looksLikeReexport(path: any) {
   return false;
 }
 
+function extractKnownDecorator(node) {
+  let result = null;
+  const name = node.key.name;
+  (node.decorators || []).forEach((dec)=>{
+    const exp = dec.expression;
+    if (exp.type === 'FunctionExpression') {
+
+    } else if (exp.type === 'Identifier') {
+      if (exp.name === 'service') {
+        result = `${node.key.name} = service("${node.key.name}")`
+      }
+    } else if (exp.type === 'CallExpression') {
+      if (exp.callee.name === 'service') {
+        const firstArg = exp.arguments[0];
+        result = `${node.key.name} = service("${firstArg ? firstArg.value : name }")`
+      }
+    }
+  });
+  return result;
+}
+
 function propExtractor(path) {
   const name = path.node.key.name;
   if (path.node.value === null) {
+    const maybeDecorator = extractKnownDecorator(path.node);
+    if (maybeDecorator) {
+      jsMeta.computeds.push(maybeDecorator);
+      return;
+    }
     let value = '';
     if (path.node.typeAnnotation && path.node.typeAnnotation.typeAnnotation) {
       const annotation = path.node.typeAnnotation.typeAnnotation;
@@ -86,9 +112,9 @@ function propExtractor(path) {
   const valueType = path.node.value.type;
   const valueElements = path.node.value.elements || [];
   if (name === "actions") {
-	if (!jsMeta.actions) {
-		jsMeta.actions = [];
-	}
+    if (!jsMeta.actions) {
+      jsMeta.actions = [];
+    }
     jsMeta.actions = jsMeta.actions.concat(extractActions(path));
   } else if (name === "classNames") {
     jsMeta.classNames = extractClassNames(path);

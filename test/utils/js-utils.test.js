@@ -6,6 +6,10 @@ const utils = require('../../dist/utils/js-utils');
 const { cleanupEmptyArrays } = require('./helpers');
 const processJSFile = utils.processJSFile;
 
+function compile(input) {
+	return cleanupEmptyArrays(processJSFile(input, 'empty'));
+}
+
 it('can export some props', () => {
 	assert(Object.keys(utils), ['parseScriptFile', 'processJSFile']);
 });
@@ -69,34 +73,26 @@ export default Component.extend({
 });
 
 	`;
-	assert(processJSFile(example, 'empty'), {
+	assert(compile(example), {
 		"actions": [
 			"myFirstAction()",
 			"mySecondAction(foo, bar)",
 		],
-		"attributeBindings": [],
-		"classNameBindings": [],
-		"classNames": [],
 		"computeds": [
 			"someComputed = computed(fn() {...})"
 		],
-		"concatenatedProperties": [],
-		"exports": [],
 		"functions": [
 			"someFunction()",
 			"myFirstAction()",
 			"mySecondAction(foo, bar)"
 		],
 		"imports": ["@ember/component", "../templates/components/hot-placeholder", "@ember/object/computed"],
-		"mergedProperties": [],
-		"positionalParams": [],
 		"props": ["layout = layout ",
 			"nullProp = null ",
 			"boolProp = false",
 			"emptyStr = \"\""
 		],
-		"tagNames": [""],
-		"unknownProps": []
+		"tagNames": [""]
 	});
 });
 
@@ -122,18 +118,9 @@ export default class AbstractControlsTableMetaMenu extends Component.extend({
 
 	`;
 
-	assert(processJSFile(example, 'empty'), {
-		"actions": [],
-		"attributeBindings": [],
-		"classNameBindings": [],
-		"classNames": [],
+	assert(compile(example), {
 		"computeds": ["halfHeadingSize = computed('heading.length', fn() {...})"],
-		"concatenatedProperties": [],
-		"exports": [],
-		"functions": [],
 		"imports": ["@ember/component", "@ember/object"],
-		"mergedProperties": [],
-		"positionalParams": [],
 		"props": ["heading = null "],
 		"tagNames": [""],
 		"unknownProps": ["heading.length"]
@@ -170,22 +157,15 @@ export default class AbstractControlsTableMetaMenu extends Component.extend({
 
 	let result = null;
 	try {
-		result = processJSFile(example, 'empty');
+		result = compile(example, 'empty');
 	} catch(e) {
 		result = JSON.stringify(e);
 	}
 	const expectedResult = {
-		"actions": ["sendEmail(name, message)"], 
-		"attributeBindings": [], 
-		"classNameBindings": [], 
-		"classNames": [], 
+		"actions": ["sendEmail(name, message)"],  
 		"computeds": ["halfHeadingSize = computed('heading.length', fn() {...})"], 
-		"concatenatedProperties": [], 
-		"exports": [], 
 		"functions": ["sendEmail(name, message)"], 
 		"imports": ["@ember/component", "@ember/object"], 
-		"mergedProperties": [], 
-		"positionalParams": [], 
 		"props": ["heading = null "], 
 		"tagNames": [""], 
 		"unknownProps": ["heading.length"]
@@ -226,19 +206,13 @@ it('can handle class properties', ()=>{
 		"classNameBindings": [
 		 "foo-bar",
 		],
-		"classNames": [],
 		"computeds": [
 		 "name = get fn()",
 		 "user = get fn()",
 		],
-		"concatenatedProperties": [],
-		"exports": [],
 		"functions": [
 		 "hello()",
 		],
-		"imports": [],
-		"mergedProperties": [],
-		"positionalParams": [],
 		"props": [
 		 "name = 42",
 		],
@@ -251,7 +225,7 @@ it('can handle class properties', ()=>{
 		],
 	};
 
-	assert(processJSFile(input, 'empty'), expectedResult);
+	assert(compile(input), expectedResult);
 });
 
 it('can handle valueless decorated props with types', ()=>{
@@ -261,7 +235,7 @@ it('can handle valueless decorated props with types', ()=>{
 			n!: Moo;
 		}
 	`;
-	assert(cleanupEmptyArrays(processJSFile(input, 'empty')), {
+	assert(compile(input), {
 		props: [
 			"n = <Moo>"
 		]
@@ -275,9 +249,37 @@ it('can handle valueless decorated props without types', ()=>{
 			n;
 		}
 	`;
-	assert(cleanupEmptyArrays(processJSFile(input, 'empty')), {
+	assert(compile(input), {
 		props: [
 			"n = undefined"
+		]
+	});
+});
+
+it('can handle service decorator with basic path', () => {
+	const input = `
+		class Foo extends Boo {
+			@service()
+			n;
+		}
+	`;
+	assert(compile(input), {
+		computeds: [
+			'n = service("n")'
+		]
+	});
+});
+
+it('can handle named service decorator with basic path', () => {
+	const input = `
+		class Foo extends Boo {
+			@service('uber')
+			n;
+		}
+	`;
+	assert(compile(input), {
+		computeds: [
+			'n = service("uber")'
 		]
 	});
 });
