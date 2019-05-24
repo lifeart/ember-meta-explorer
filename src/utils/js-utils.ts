@@ -63,8 +63,27 @@ function looksLikeReexport(path: any) {
 }
 
 function propExtractor(path) {
-  const valueType = path.node.value.type;
   const name = path.node.key.name;
+  if (path.node.value === null) {
+    let value = '';
+    if (path.node.typeAnnotation && path.node.typeAnnotation.typeAnnotation) {
+      const annotation = path.node.typeAnnotation.typeAnnotation;
+      // TSAnyKeyword
+      if (annotation.type === 'TSAnyKeyword') {
+        value = 'any';
+      } else if (annotation.typeName) {
+        value = annotation.typeName.name || '';
+      }
+    }
+    if (value !== '') {
+      jsMeta.props.push(`${name} = <${value}>`);
+    } else {
+      jsMeta.props.push(`${name} = undefined`);
+    }
+    
+    return;
+  }
+  const valueType = path.node.value.type;
   const valueElements = path.node.value.elements || [];
   if (name === "actions") {
 	if (!jsMeta.actions) {
