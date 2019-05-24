@@ -3,10 +3,11 @@
 /* eslint-env node */
 
 const utils = require('../../dist/utils/js-utils');
+const { cleanupEmptyArrays } = require('./helpers');
 const processJSFile = utils.processJSFile;
 
 it('can export some props', () => {
-	assert(Object.keys(utils), ['processJSFile']);
+	assert(Object.keys(utils), ['parseScriptFile', 'processJSFile']);
 });
 
 it('can handle basic js component', () => {
@@ -253,6 +254,35 @@ it('can handle class properties', ()=>{
 	assert(processJSFile(input, 'empty'), expectedResult);
 });
 
+it('can handle valueless decorated props with types', ()=>{
+	const input = `
+		class Foo extends Boo {
+			@(function(){})
+			n!: Moo;
+		}
+	`;
+	assert(cleanupEmptyArrays(processJSFile(input, 'empty')), {
+		props: [
+			"n : Moo = ?"
+		]
+	});
+});
+
+it('can handle valueless decorated props without types', ()=>{
+	const input = `
+		class Foo extends Boo {
+			@(function(){})
+			n;
+		}
+	`;
+	assert(cleanupEmptyArrays(processJSFile(input, 'empty')), {
+		props: [
+			"n = ?"
+		]
+	});
+});
+
 function assert(left, right) {
 	expect(left).toEqual(right);
 }
+
