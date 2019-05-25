@@ -30,14 +30,35 @@ var hbsMeta: IHbsMeta = {
   helpers: []
 };
 
+
+const HAVE_SEEN_KEY = '_HBS_UTILS_SEEN';
+let BLOCKS_STACK = [];
+function seen(node) {
+  return HAVE_SEEN_KEY in node;
+}
+function markAsSeen(node) {
+  node[HAVE_SEEN_KEY] = true;
+}
+
 function addUniqHBSMetaProperty(type: THbsMetaKey, item: string) {
   if ((hbsMeta[type] as any[]).includes(item)) {
     return;
   }
-  hbsMeta[type].push(item as any);
+  if ((type === 'properties' || type === 'paths') && BLOCKS_STACK.length) {
+    let itemPart = item.split('.')[0].replace('this.', '').replace('@', '');
+    if (BLOCKS_STACK.includes(itemPart)) {
+      hbsMeta[type].push('$' + item as any);
+    }
+  } else {
+    if (type === 'helpers' && BLOCKS_STACK.includes(item)) {
+      return;
+    }
+    hbsMeta[type].push(item as any);
+  }
 }
 
 function resetHBSMeta() {
+  BLOCKS_STACK = [];
   hbsMeta = {
     paths: [],
     modifiers: [],
@@ -49,35 +70,62 @@ function resetHBSMeta() {
   };
 }
 
-function isLinkBlock(node: any) {
-  if (node.type !== "BlockStatement") {
-    return;
+export function patternMatch(node, pattern) {
+  if (Array.isArray(pattern)) {
+    for (let i = 0; i < pattern.length; i++) {
+      if (patternMatch(node, pattern[i])) {
+        return true;
+      }
+    }
+    return false;
   }
-  if (node.path.type !== "PathExpression") {
-    return;
-  }
-  if (node.path.original !== "link-to") {
-    return;
+  const attrs = Object.keys(pattern);
+  for (let i = 0; i < attrs.length; i++) {
+    let key = attrs[i];
+    if (typeof pattern[key] === 'object' && pattern[key] !== null) {
+      if (key in node) {
+        if (!patternMatch(node[key], pattern[key])) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    } else if (pattern[key] === node[key]) {
+      // return true;
+    } else {
+      return false;
+    }
   }
   return true;
 }
 
+function isLinkNode(node: any) {
+  return patternMatch(node, [{
+    type: "BlockStatement",
+    path: {
+      type: "PathExpression",
+      original: "link-to"
+    }
+  }, { tag: 'LinkTo', type: 'ElementNode' }]);
+}
+
 function ignoredPaths() {
-  return ["hasBlock", "if", "else", "component", "yield", "hash", "unless"];
+  return ["hasBlock", "if", "each", "each-in", "else", "component", "yield", "hash", "unless"];
 }
 
 function plugin() {
   return {
     visitor: {
       BlockStatement(node: any) {
-        if (isLinkBlock(node)) {
-          const linkPath = node.path.parts[0];
+        if (isLinkNode(node)) {
+          const linkPath = node.params[0].original;
           if (!hbsMeta.links.includes(linkPath)) {
             hbsMeta.links.push(linkPath);
           }
         } else if (
           !node.path.original.includes(".") &&
           !node.path.original.includes("-") &&
+          !node.path.original.startsWith('@') &&
           node.path.original !== "component"
         ) {
           addUniqHBSMetaProperty("helpers", node.path.original);
@@ -90,23 +138,54 @@ function plugin() {
       },
       ElementNode(item: any) {
         if (item.tag.charAt(0) === item.tag.charAt(0).toUpperCase()) {
-          addUniqHBSMetaProperty("components", item.tag);
+          if (isLinkNode(item)) {
+            item.attributes.forEach((attr)=>{
+              if (attr.name === '@route') {
+                if (attr.value.type === 'TextNode') {
+                  const linkPath = attr.value.chars;
+                  if (!hbsMeta.links.includes(linkPath)) {
+                    hbsMeta.links.push(linkPath);
+                  }
+                }
+              }
+            });
+          } else {
+            addUniqHBSMetaProperty("components", item.tag);
+          }
+        }
+        if (item.blockParams && item.blockParams.length) {
+          BLOCKS_STACK.push(item.blockParams[0]);
         }
       },
       MustacheStatement(item: any) {
+        const pathName = item.path.original;
         if (
-          item.path.original === "component" &&
+          pathName === "component" &&
           item.params[0].type === "StringLiteral"
         ) {
           addUniqHBSMetaProperty("components", item.params[0].original);
         } else {
-          if (
-            !item.path.original.includes(".") &&
-            !item.path.original.includes("-")
-          ) {
-            addUniqHBSMetaProperty("helpers", item.path.original);
+          if (pathName === 'link-to') {
+            if (item.params.length > 1) {
+              if (item.params[1].type === 'StringLiteral') {
+                markAsSeen(item);
+                hbsMeta.links.push(item.params[1].original);
+              }
+            }
+          } else {
+            if (
+              !pathName.includes(".") &&
+              !pathName.startsWith('@') &&
+              !pathName.includes("-")
+            ) {
+              addUniqHBSMetaProperty("helpers", item.path.original);
+            }
           }
+         
         }
+      },
+      Block(node: any) {
+        BLOCKS_STACK.push(node.blockParams[0]);
       },
       SubExpression(item: any) {
         if (
@@ -117,6 +196,7 @@ function plugin() {
         } else {
           if (
             !item.path.original.includes(".") &&
+            !item.path.original.startsWith("@") &&
             !item.path.original.includes("-")
           ) {
             addUniqHBSMetaProperty("helpers", item.path.original);
@@ -124,13 +204,16 @@ function plugin() {
         }
       },
       PathExpression(item: any) {
+        if (seen(item)) {
+          return item;
+        }
         const pathOriginal = item.original;
-        if (item.data === true) {
-          if (item.this === false) {
-            addUniqHBSMetaProperty("arguments", pathOriginal);
-          }
+        if (item.data === true && item.this === false) {
+          addUniqHBSMetaProperty("arguments", pathOriginal);
         } else if (item.this === true) {
-          addUniqHBSMetaProperty("properties", pathOriginal);
+          if (pathOriginal !== 'this') {
+            addUniqHBSMetaProperty("properties", pathOriginal);
+          }
         } else {
           if (pathOriginal.includes("/")) {
             addUniqHBSMetaProperty("components", pathOriginal);
@@ -138,16 +221,23 @@ function plugin() {
             pathOriginal.includes("-") &&
             !pathOriginal.includes(".")
           ) {
-            addUniqHBSMetaProperty("helpers", pathOriginal);
+            if (pathOriginal !== 'link-to') {
+              addUniqHBSMetaProperty("helpers", pathOriginal);
+            }
           } else {
-            addUniqHBSMetaProperty("paths", pathOriginal);
+            if (pathOriginal !== 'action') {
+              addUniqHBSMetaProperty("paths", pathOriginal);
+            }
           }
         }
       },
       ElementModifierStatement(item: any) {
+        const name = item.path.original;
+        const maybeFirstParam = item.params[0] ? item.params[0].original : '';
+        markAsSeen(item.path);
         hbsMeta.modifiers.push({
-          name: item.path.original,
-          param: item.params[0].original
+          name,
+          param: maybeFirstParam
         });
       }
     }
@@ -173,7 +263,7 @@ export function processTemplate(template: string) {
     .filter((p: string) => !(allStuff as any).includes(p as any))
     .filter((p: string) => !ignored.includes(p));
   hbsMeta.helpers = hbsMeta.helpers.filter(
-    n => !hbsMeta.components.includes(n)
+    n => !hbsMeta.components.includes(n) && !ignored.includes(n)
   );
   hbsMeta.properties = hbsMeta.properties.filter(p => !ignored.includes(p));
 
