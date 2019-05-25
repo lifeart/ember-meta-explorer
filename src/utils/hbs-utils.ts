@@ -49,17 +49,43 @@ function resetHBSMeta() {
   };
 }
 
-function isLinkBlock(node: any) {
-  if (node.type !== "BlockStatement") {
-    return;
+export function patternMatch(node, pattern) {
+  if (Array.isArray(pattern)) {
+    for (let i = 0; i < pattern.length; i++) {
+      if (patternMatch(node, pattern[i])) {
+        return true;
+      }
+    }
+    return false;
   }
-  if (node.path.type !== "PathExpression") {
-    return;
-  }
-  if (node.path.original !== "link-to") {
-    return;
+  const attrs = Object.keys(pattern);
+  for (let i = 0; i < attrs.length; i++) {
+    let key = attrs[i];
+    if (typeof pattern[key] === 'object' && pattern[key] !== null) {
+      if (key in node) {
+        if (!patternMatch(node[key], pattern[key])) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    } else if (pattern[key] === node[key]) {
+      // return true;
+    } else {
+      return false;
+    }
   }
   return true;
+}
+
+export function isLinkBlock(node: any) {
+  return patternMatch(node, {
+    type: "BlockStatement",
+    path: {
+      type: "PathExpression",
+      original: "link-to"
+    }
+  });
 }
 
 function ignoredPaths() {
