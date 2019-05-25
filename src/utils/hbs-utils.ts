@@ -98,7 +98,7 @@ function isLinkNode(node: any) {
 }
 
 function ignoredPaths() {
-  return ["hasBlock", "if", "else", "component", "yield", "hash", "unless"];
+  return ["hasBlock", "if", "each", "each-in", "else", "component", "yield", "hash", "unless"];
 }
 
 function plugin() {
@@ -113,7 +113,7 @@ function plugin() {
         } else if (
           !node.path.original.includes(".") &&
           !node.path.original.includes("-") &&
-          !node.path.startsWith('@') &&
+          !node.path.original.startsWith('@') &&
           node.path.original !== "component"
         ) {
           addUniqHBSMetaProperty("helpers", node.path.original);
@@ -187,11 +187,16 @@ function plugin() {
         }
       },
       PathExpression(item: any) {
+        if (seen(item)) {
+          return item;
+        }
         const pathOriginal = item.original;
         if (item.data === true && item.this === false) {
           addUniqHBSMetaProperty("arguments", pathOriginal);
         } else if (item.this === true) {
-          addUniqHBSMetaProperty("properties", pathOriginal);
+          if (pathOriginal !== 'this') {
+            addUniqHBSMetaProperty("properties", pathOriginal);
+          }
         } else {
           if (pathOriginal.includes("/")) {
             addUniqHBSMetaProperty("components", pathOriginal);
@@ -203,13 +208,16 @@ function plugin() {
               addUniqHBSMetaProperty("helpers", pathOriginal);
             }
           } else {
-            addUniqHBSMetaProperty("paths", pathOriginal);
+            if (pathOriginal !== 'action') {
+              addUniqHBSMetaProperty("paths", pathOriginal);
+            }
           }
         }
       },
       ElementModifierStatement(item: any) {
         const name = item.path.original;
         const maybeFirstParam = item.params[0] ? item.params[0].original : '';
+        markAsSeen(item.path);
         hbsMeta.modifiers.push({
           name,
           param: maybeFirstParam
@@ -238,7 +246,7 @@ export function processTemplate(template: string) {
     .filter((p: string) => !(allStuff as any).includes(p as any))
     .filter((p: string) => !ignored.includes(p));
   hbsMeta.helpers = hbsMeta.helpers.filter(
-    n => !hbsMeta.components.includes(n)
+    n => !hbsMeta.components.includes(n) && !ignored.includes(n)
   );
   hbsMeta.properties = hbsMeta.properties.filter(p => !ignored.includes(p));
 

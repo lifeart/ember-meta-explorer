@@ -116,6 +116,37 @@ it('support external props', () => {
     assertOutput(tpl, {arguments: ['@name']});
 });
 
+it('support actions grabbing', () => {
+    const tpl = `<div onclick={{action 'doIt'}}></div>`;
+    assertOutput(tpl, { helpers: ['action']});
+});
+it('support action modifiers grabbing', () => {
+    const tpl = `<div {{action 'doIt'}}></div>`;
+    assertOutput(tpl, { modifiers: [{
+        name: 'action',
+        param: 'doIt'
+    }]});
+});
+it('support ref modifiers grabbing', () => {
+    const tpl = `<div {{ref this 'doIt'}}></div>`;
+    assertOutput(tpl, { modifiers: [{
+        name: 'ref',
+        param: 'this'
+    }]});
+});
+it('support nested properties grabbing', () => {
+    const tpl = `{{this.name.original.value}}`;
+    assertOutput(tpl, {
+        properties: ['this.name.original.value']
+    });
+});
+it('can extract paths from each', () => {
+    const tpl = `{{#each this.items as |item|}}{{/each}}`;
+    assertOutput(tpl, {
+        properties: ['this.items']
+    });
+});
+
 function assert(left, right) {
 	expect(left).toEqual(right);
 }
