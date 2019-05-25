@@ -32,6 +32,7 @@ var hbsMeta: IHbsMeta = {
 
 
 const HAVE_SEEN_KEY = '_HBS_UTILS_SEEN';
+let BLOCKS_STACK = [];
 function seen(node) {
   return HAVE_SEEN_KEY in node;
 }
@@ -43,10 +44,21 @@ function addUniqHBSMetaProperty(type: THbsMetaKey, item: string) {
   if ((hbsMeta[type] as any[]).includes(item)) {
     return;
   }
-  hbsMeta[type].push(item as any);
+  if ((type === 'properties' || type === 'paths') && BLOCKS_STACK.length) {
+    let itemPart = item.split('.')[0].replace('this.', '').replace('@', '');
+    if (BLOCKS_STACK.includes(itemPart)) {
+      hbsMeta[type].push('$' + item as any);
+    }
+  } else {
+    if (type === 'helpers' && BLOCKS_STACK.includes(item)) {
+      return;
+    }
+    hbsMeta[type].push(item as any);
+  }
 }
 
 function resetHBSMeta() {
+  BLOCKS_STACK = [];
   hbsMeta = {
     paths: [],
     modifiers: [],
@@ -141,7 +153,9 @@ function plugin() {
             addUniqHBSMetaProperty("components", item.tag);
           }
         }
-        
+        if (item.blockParams && item.blockParams.length) {
+          BLOCKS_STACK.push(item.blockParams[0]);
+        }
       },
       MustacheStatement(item: any) {
         const pathName = item.path.original;
@@ -169,6 +183,9 @@ function plugin() {
           }
          
         }
+      },
+      Block(node: any) {
+        BLOCKS_STACK.push(node.blockParams[0]);
       },
       SubExpression(item: any) {
         if (

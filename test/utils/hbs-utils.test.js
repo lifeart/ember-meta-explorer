@@ -146,6 +146,21 @@ it('can extract paths from each', () => {
         properties: ['this.items']
     });
 });
+it('can mark properties as scoped', () => {
+    const tpl = `{{#each this.items as |item|}} {{item}} {{/each}}`;
+    assertOutput(tpl, {
+        properties: ['this.items'],
+        paths: ['$item']
+    });
+});
+it('can mark properties as scoped for angle components', () => {
+    const tpl = `<MyEach as |item|>{{item}}</MyEach>`;
+    assertOutput(tpl, {
+        components: ['MyEach'],
+        paths: ['$item']
+    });
+});
+
 
 function assert(left, right) {
 	expect(left).toEqual(right);
