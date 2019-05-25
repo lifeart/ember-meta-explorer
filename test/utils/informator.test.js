@@ -2,7 +2,7 @@
 /* eslint-env jest */
 /* eslint-env node */
 
-const { extractComponentInformationFromMeta } = require('../../dist/utils/informator');
+const { extractComponentInformationFromMeta, rebelObject } = require('../../dist/utils/informator');
 const { processJSFile } = require('../../dist/utils/js-utils');
 
 function compile(input) {
@@ -43,6 +43,44 @@ it('ts: can get info for property without value. with propert type and with deco
 });
 
 
+it('rebelObject can handle flat cases', ()=>{
+	assert(rebelObject(['name']), { name: 'any' });
+	assert(rebelObject(['name', 'lastname']), { name: 'any', lastname: 'any' });
+});
+it('rebelObject can handle nested cases', ()=>{
+	assert(rebelObject(['name', 'name.lastname']), { name: { lastname: 'any' } });
+	assert(rebelObject(['name', 'name.lastname', 'name.lastname.value']), { name: { lastname: { value: 'any'} } });
+	assert(rebelObject(['name', 'name.lastname', 'name.lastname.value', 'name.lastname.uid']), { name: { lastname: { value: 'any', uid: 'any'} } });
+});
+it('rebelObject can handle local context', ()=>{
+	const input = ['this.name', 'name', 'this.name.id', 'name.item'];
+	const output = {
+		name: {
+			id: 'any',
+			item: 'any'
+		}
+	}
+	assert(rebelObject(input), output);
+});
+it('rebelObject can handle external context', ()=>{
+	const input = ['@name', '@name.id', '@name.item.id'];
+	const output = {
+		args: {
+			name: {
+				id: 'any',
+				item: {
+					id: 'any'
+				}
+			}
+		}
+	};
+	assert(rebelObject(input), output);
+});
+it('rebelObject skip this path', ()=>{
+	const input = ['this'];
+	const output = {};
+	assert(rebelObject(input), output);
+});
 function assert(left, right) {
 	expect(left).toEqual(right);
 }

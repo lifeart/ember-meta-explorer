@@ -21,6 +21,41 @@ export interface IComponentMetaInformation {
   api: IComponentMetaInformationAPI;
 }
 
+export function rebelObject(paths: string[], obj: any = {}) {
+  paths.forEach((name)=>{
+    if (name === 'this') {
+      return;
+    }
+    if (name.startsWith('this.')) {
+      name = name.replace('this.', '');
+    }
+    let ctx = obj;
+    if (name.startsWith('@')) {
+      name = name.replace('@', '');
+      if (!('args' in obj)) {
+        obj['args'] = {};
+      }
+      ctx = obj.args;
+    }
+    const dotIndex = name.indexOf('.');
+    if (dotIndex === -1) {
+      if (!(name in ctx)) {
+        ctx[name] = 'any';
+      }
+    } else {
+      let objKey = name.slice(0, dotIndex);
+      let objKeyTail = name.slice(dotIndex + 1, name.length);
+      if (typeof ctx[objKey] !== 'object') {
+        ctx[objKey] = {};
+      }
+      if (objKeyTail.length) {
+        rebelObject([objKeyTail], ctx[objKey]);
+      }
+    }
+  });
+  return obj;
+}
+
 function eachValue(arr: null | undefined | any[], cb: (value: any) => void) {
   if (!arr || !Array.isArray(arr)) {
     return;
