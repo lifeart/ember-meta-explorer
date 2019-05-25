@@ -70,14 +70,14 @@ it('must grab angle components blocks with context', () => {
     });
 });
 
-it('respect {{link-to}} componnt', () => {
+it('respect {{link-to}} component', () => {
     const tpl = '{{link-to "name" "uri"}}';
     assertOutput(tpl, {
         links: ['uri']
     });
 });
 
-it('respect {{#link-to "path"}}{{/link-to}} componnt', () => {
+it('respect {{#link-to "path"}}{{/link-to}} component', () => {
     const tpl = '{{#link-to "uri"}}{{/link-to}}';
     assertOutput(tpl, {
         links: ['uri']
@@ -85,20 +85,36 @@ it('respect {{#link-to "path"}}{{/link-to}} componnt', () => {
 });
 
 
-it('respect <LinkTo @route="name" /> componnt', () => {
+it('respect <LinkTo @route="name" /> component', () => {
     const tpl = '<LinkTo @route="name" />';
     assertOutput(tpl, {
         links: ['name']
     });
 });
 
-it('respect <LinkTo @route="name" ></LinkTo> componnt', () => {
+it('respect <LinkTo @route="name" ></LinkTo> component', () => {
     const tpl = '<LinkTo @route="name"></LinkTo>';
     assertOutput(tpl, {
         links: ['name']
     });
 });
 
+it('respect <LinkTo @route="name" ></LinkTo> component', () => {
+    const tpl = '<LinkTo @route="name"></LinkTo>';
+    assertOutput(tpl, {
+        links: ['name']
+    });
+});
+
+it('support plain props', () => {
+    const tpl = '{{this.name}}';
+    assertOutput(tpl, {properties: ['this.name']});
+});
+
+it('support external props', () => {
+    const tpl = '{{@name}}';
+    assertOutput(tpl, {arguments: ['@name']});
+});
 
 function assert(left, right) {
 	expect(left).toEqual(right);

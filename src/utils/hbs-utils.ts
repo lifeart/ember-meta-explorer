@@ -113,6 +113,7 @@ function plugin() {
         } else if (
           !node.path.original.includes(".") &&
           !node.path.original.includes("-") &&
+          !node.path.startsWith('@') &&
           node.path.original !== "component"
         ) {
           addUniqHBSMetaProperty("helpers", node.path.original);
@@ -160,6 +161,7 @@ function plugin() {
           } else {
             if (
               !pathName.includes(".") &&
+              !pathName.startsWith('@') &&
               !pathName.includes("-")
             ) {
               addUniqHBSMetaProperty("helpers", item.path.original);
@@ -177,6 +179,7 @@ function plugin() {
         } else {
           if (
             !item.path.original.includes(".") &&
+            !item.path.original.startsWith("@") &&
             !item.path.original.includes("-")
           ) {
             addUniqHBSMetaProperty("helpers", item.path.original);
