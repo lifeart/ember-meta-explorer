@@ -30,6 +30,15 @@ var hbsMeta: IHbsMeta = {
   helpers: []
 };
 
+
+const HAVE_SEEN_KEY = '_HBS_UTILS_SEEN';
+function seen(node) {
+  return HAVE_SEEN_KEY in node;
+}
+function markAsSeen(node) {
+  node[HAVE_SEEN_KEY] = true;
+}
+
 function addUniqHBSMetaProperty(type: THbsMetaKey, item: string) {
   if ((hbsMeta[type] as any[]).includes(item)) {
     return;
@@ -78,14 +87,14 @@ export function patternMatch(node, pattern) {
   return true;
 }
 
-export function isLinkBlock(node: any) {
-  return patternMatch(node, {
+function isLinkNode(node: any) {
+  return patternMatch(node, [{
     type: "BlockStatement",
     path: {
       type: "PathExpression",
       original: "link-to"
     }
-  });
+  }, { tag: 'LinkTo', type: 'ElementNode' }]);
 }
 
 function ignoredPaths() {
@@ -96,8 +105,8 @@ function plugin() {
   return {
     visitor: {
       BlockStatement(node: any) {
-        if (isLinkBlock(node)) {
-          const linkPath = node.path.parts[0];
+        if (isLinkNode(node)) {
+          const linkPath = node.params[0].original;
           if (!hbsMeta.links.includes(linkPath)) {
             hbsMeta.links.push(linkPath);
           }
@@ -116,22 +125,47 @@ function plugin() {
       },
       ElementNode(item: any) {
         if (item.tag.charAt(0) === item.tag.charAt(0).toUpperCase()) {
-          addUniqHBSMetaProperty("components", item.tag);
+          if (isLinkNode(item)) {
+            item.attributes.forEach((attr)=>{
+              if (attr.name === '@route') {
+                if (attr.value.type === 'TextNode') {
+                  const linkPath = attr.value.chars;
+                  if (!hbsMeta.links.includes(linkPath)) {
+                    hbsMeta.links.push(linkPath);
+                  }
+                }
+              }
+            });
+          } else {
+            addUniqHBSMetaProperty("components", item.tag);
+          }
         }
+        
       },
       MustacheStatement(item: any) {
+        const pathName = item.path.original;
         if (
-          item.path.original === "component" &&
+          pathName === "component" &&
           item.params[0].type === "StringLiteral"
         ) {
           addUniqHBSMetaProperty("components", item.params[0].original);
         } else {
-          if (
-            !item.path.original.includes(".") &&
-            !item.path.original.includes("-")
-          ) {
-            addUniqHBSMetaProperty("helpers", item.path.original);
+          if (pathName === 'link-to') {
+            if (item.params.length > 1) {
+              if (item.params[1].type === 'StringLiteral') {
+                markAsSeen(item);
+                hbsMeta.links.push(item.params[1].original);
+              }
+            }
+          } else {
+            if (
+              !pathName.includes(".") &&
+              !pathName.includes("-")
+            ) {
+              addUniqHBSMetaProperty("helpers", item.path.original);
+            }
           }
+         
         }
       },
       SubExpression(item: any) {
@@ -151,10 +185,8 @@ function plugin() {
       },
       PathExpression(item: any) {
         const pathOriginal = item.original;
-        if (item.data === true) {
-          if (item.this === false) {
-            addUniqHBSMetaProperty("arguments", pathOriginal);
-          }
+        if (item.data === true && item.this === false) {
+          addUniqHBSMetaProperty("arguments", pathOriginal);
         } else if (item.this === true) {
           addUniqHBSMetaProperty("properties", pathOriginal);
         } else {
@@ -164,16 +196,20 @@ function plugin() {
             pathOriginal.includes("-") &&
             !pathOriginal.includes(".")
           ) {
-            addUniqHBSMetaProperty("helpers", pathOriginal);
+            if (pathOriginal !== 'link-to') {
+              addUniqHBSMetaProperty("helpers", pathOriginal);
+            }
           } else {
             addUniqHBSMetaProperty("paths", pathOriginal);
           }
         }
       },
       ElementModifierStatement(item: any) {
+        const name = item.path.original;
+        const maybeFirstParam = item.params[0] ? item.params[0].original : '';
         hbsMeta.modifiers.push({
-          name: item.path.original,
-          param: item.params[0].original
+          name,
+          param: maybeFirstParam
         });
       }
     }
