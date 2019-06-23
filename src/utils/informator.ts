@@ -1,3 +1,8 @@
+const { print } = require("@glimmer/syntax");
+const { parseScriptFile } = require('./js-utils');
+const { cast } = require('./jsx-caster');
+import traverse from "@babel/traverse";
+
 export interface IComponentMetaInformationAPI {
   actions: string[];
   tagName: string;
@@ -283,4 +288,32 @@ export function extractComponentInformationFromMeta(meta: any) {
   });
 
   return componentInformation;
+}
+
+var extractedComponents = {};
+
+function jsxComponentExtractor() {
+  extractedComponents = {};
+  return {
+    FunctionDeclaration(path) {
+      let node = path.node;
+      if (node.id.name && node.body && node.body.body.length) {
+        let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
+        if (result.length) {
+          if (result[0].argument.type === 'JSXElement') {
+            extractedComponents[node.id.name] = print(cast(result[0].argument, node.body));
+          }
+        }
+      }
+    }
+  }
+}
+
+export function extractJSXComponents(jsxInput) {
+  let ast = parseScriptFile(jsxInput, {
+    filename: "dummy.tsx",
+    parserOpts: { isTSX: true }
+  });
+  traverse(ast, jsxComponentExtractor());
+  return extractedComponents;
 }
