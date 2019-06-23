@@ -172,6 +172,14 @@ it("can handle tricky math cases", () => {
   );
 });
 
+it("can handle increment case", () => {
+    const input = `(<span>{i++}</span>);`;
+    assert(
+      toHBS(input),
+      "<span>{{inc this.i}}</span>"
+    );
+});
+
 it("support nullable rendering cases", () => {
   const input = `(<div>{this.state.isDangerAlertShowed ? <DangerAlert text={'Danger'} /> : null}</div>);`;
   assert(

@@ -9,6 +9,11 @@ function operatorToPath(operator) {
     "&&": "and",
     "*": "mult",
     ">": "gt",
+    "==": "eq",
+    "===": "eq",
+    "!=": "not-eq",
+    "++": "inc",
+    "--": "dec",
     "<": "lt",
     ">=": "gte",
     "<=": "lte",
@@ -187,6 +192,16 @@ const casters = {
       params: [cast(node.left, node), cast(node.right, node)]
     };
   },
+  UpdateExpression(node, parent) {
+    return {
+      type:
+        parent && parent.type === "JSXExpressionContainer" ? "MustacheStatement" : "SubExpression",
+      hash: { type: "Hash", pairs: [], loc: null },
+      loc: node.loc,
+      path: operatorToPath(node.operator),
+      params: [cast(node.argument, node)]
+    };
+  },
   ArrowFunctionExpression(node) {
     let blockParams = node.params.map(param => {
       return castToString(param, node);
@@ -245,8 +260,8 @@ const casters = {
     if (isExternal) {
       items.shift();
       original = original.replace("this.", "").replace("props.", "@");
-      if (original === '@children') {
-        original = 'yield';
+      if (original === "@children") {
+        original = "yield";
       }
     }
 
@@ -254,10 +269,10 @@ const casters = {
       original = original.replace("this.Math.", "");
       items = original.split(".");
     }
-    const isYield = original === 'yield';
+    const isYield = original === "yield";
     if (isYield) {
-        isExternal = false;
-        items = [original];
+      isExternal = false;
+      items = [original];
     }
     return {
       type: "PathExpression",
@@ -300,6 +315,8 @@ const casters = {
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
     if (node.expression.type === "JSXEmptyExpression") {
+      return cast(expression, node);
+    } else if (node.expression.type === "UpdateExpression") {
       return cast(expression, node);
     } else if (node.expression.type === "ConditionalExpression") {
       return cast(expression, node);
