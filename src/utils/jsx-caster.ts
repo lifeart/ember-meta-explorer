@@ -245,11 +245,19 @@ const casters = {
     if (isExternal) {
       items.shift();
       original = original.replace("this.", "").replace("props.", "@");
+      if (original === '@children') {
+        original = 'yield';
+      }
     }
 
     if (original.startsWith("this.Math.")) {
       original = original.replace("this.Math.", "");
       items = original.split(".");
+    }
+    const isYield = original === 'yield';
+    if (isYield) {
+        isExternal = false;
+        items = [original];
     }
     return {
       type: "PathExpression",

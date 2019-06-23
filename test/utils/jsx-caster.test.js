@@ -190,6 +190,11 @@ it("can convert dom attributes to normal names", () => {
     assert(toHBS(input), '<form tabindex="42"></form>');
 });
 
+it("support yield", () => {
+    const input = `(<form>{{this.props.children}}</form>);`;
+    assert(toHBS(input), '<form>{{yield}}</form>');
+});
+
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {
@@ -216,11 +221,11 @@ it("can return components map from pure functions input", () => {
 
   expect(components).toHaveProperty(
     "SuccessMessage",
-    '<div class="message message_success"><MessageContent @title={{@title}}>{{@children}}</MessageContent></div>'
+    '<div class="message message_success"><MessageContent @title={{@title}}>{{yield}}</MessageContent></div>'
   );
   expect(components).toHaveProperty(
     "MessageContent",
-    '<p class="message__content"><h3 class="message__title">{{@title}}</h3><p class="message__text">{{@children}}</p></p>'
+    '<p class="message__content"><h3 class="message__title">{{@title}}</h3><p class="message__text">{{yield}}</p></p>'
   );
   expect(components).toHaveProperty(
     "App",
