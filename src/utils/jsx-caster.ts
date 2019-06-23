@@ -1,6 +1,6 @@
 var scopedVariables = [];
 
-function operatorToPath(operator) {
+function operatorToPath(operator, parent = null) {
   const operationMap = {
     if: "if",
     on: "on",
@@ -21,11 +21,22 @@ function operatorToPath(operator) {
     "%": "mod"
   };
 
+  let resolvedResult = operationMap[operator];
+  if (
+    parent &&
+    parent.type === "BinaryExpression" &&
+    parent.left.type === "StringLiteral"
+  ) {
+    if (resolvedResult === "inc") {
+      resolvedResult = "concat";
+    }
+  }
+
   return {
     type: "PathExpression",
-    original: operationMap[operator],
+    original: resolvedResult,
     this: false,
-    parts: [operationMap[operator]],
+    parts: [resolvedResult],
     data: false,
     loc: null
   };
@@ -188,7 +199,7 @@ const casters = {
       type: "SubExpression",
       hash: { type: "Hash", pairs: [], loc: null },
       loc: node.loc,
-      path: operatorToPath(node.operator),
+      path: operatorToPath(node.operator, node),
       params: [cast(node.left, node), cast(node.right, node)]
     };
   },
@@ -325,7 +336,10 @@ const casters = {
   },
   ObjectExpression(node, parent) {
     return {
-      type: (parent.type === "ObjectProperty" || parent.type === "ArrayExpression") ? "SubExpression" : "MustacheStatement",
+      type:
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+          ? "SubExpression"
+          : "MustacheStatement",
       params: [],
       loc: node.loc,
       escaped: true,
@@ -353,8 +367,11 @@ const casters = {
   },
   ArrayExpression(node, parent) {
     return {
-      type: (parent.type === "ObjectProperty" || parent.type === "ArrayExpression") ? "SubExpression" : "MustacheStatement",
-      params: node.elements.map((el)=> cast(el, node)),
+      type:
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+          ? "SubExpression"
+          : "MustacheStatement",
+      params: node.elements.map(el => cast(el, node)),
       loc: node.loc,
       escaped: true,
       hash: {
@@ -374,40 +391,43 @@ const casters = {
   },
   TemplateElement(node, parent) {
     return {
-        type: "StringLiteral",
-        value: node.value.cooked,
-        original: node.value.raw,
-        loc: node.loc
-      };
+      type: "StringLiteral",
+      value: node.value.cooked,
+      original: node.value.raw,
+      loc: node.loc
+    };
   },
   TemplateLiteral(node, parent) {
     let expressions = node.expressions;
     let quasis = node.quasis;
     let parts = [];
-    quasis.forEach((q)=>{
-        parts.push(q);
-        if (expressions.length) {
-            parts.push(expressions.shift());
-        }
+    quasis.forEach(q => {
+      parts.push(q);
+      if (expressions.length) {
+        parts.push(expressions.shift());
+      }
     });
     return {
-        type: (parent.type === "ObjectProperty" || parent.type === "ArrayExpression") ? "SubExpression" : "MustacheStatement",
-        params: parts.map((item) => cast(item, node)),
-        loc: node.loc,
-        escaped: true,
-        hash: {
-          type: "Hash",
-          loc: null,
-          pairs: []
-        },
-        path: {
-          type: "PathExpression",
-          original: "concat",
-          this: false,
-          parts: ["concat"],
-          data: false,
-          loc: null
-        }
+      type:
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+          ? "SubExpression"
+          : "MustacheStatement",
+      params: parts.map(item => cast(item, node)),
+      loc: node.loc,
+      escaped: true,
+      hash: {
+        type: "Hash",
+        loc: null,
+        pairs: []
+      },
+      path: {
+        type: "PathExpression",
+        original: "concat",
+        this: false,
+        parts: ["concat"],
+        data: false,
+        loc: null
+      }
     };
   },
   JSXExpressionContainer(node, parent) {
@@ -466,8 +486,8 @@ const casters = {
         );
       }
     } else if (expression.type === "BinaryExpression") {
-      result.path = operatorToPath(expression.operator);
-      result.params = [cast(expression.left), cast(expression.right)];
+      result.path = operatorToPath(expression.operator, expression);
+      result.params = [cast(expression.left, expression), cast(expression.right, expression)];
     } else {
       result.params = [];
       result.path = cast(node.expression);
@@ -485,7 +505,9 @@ const casters = {
       parent &&
       (parent.type === "CallExpression" ||
         parent.type === "BinaryExpression" ||
-        parent.type === "ConditionalExpression" || parent.type === "ObjectProperty" || parent.type === "ArrayExpression")
+        parent.type === "ConditionalExpression" ||
+        parent.type === "ObjectProperty" ||
+        parent.type === "ArrayExpression")
     ) {
       return {
         type: "StringLiteral",

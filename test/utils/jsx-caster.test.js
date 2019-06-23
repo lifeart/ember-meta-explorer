@@ -228,6 +228,11 @@ it("support template strings using concat", () => {
     assert(toHBS(input), '<MyComponent @name={{concat "foo" this.bar "1"}}></MyComponent>');
 });
 
+it("support string concatination", ()=>{
+    const input = '(<MyComponent name={"3" + 2} />);';
+    assert(toHBS(input), '<MyComponent @name={{concat "3" 2}}></MyComponent>');
+});
+
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {
