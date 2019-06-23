@@ -300,8 +300,9 @@ function jsxComponentExtractor() {
       if (node.id.name && node.body && node.body.body.length) {
         let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
         if (result.length) {
-          if (result[0].argument.type === 'JSXElement') {
-            extractedComponents[node.id.name] = print(cast(result[0].argument, node.body));
+          const arg = result[0].argument;
+          if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
+            extractedComponents[node.id.name] = print(cast(arg, result[0]));
           }
         }
       }

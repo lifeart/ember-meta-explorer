@@ -309,8 +309,17 @@ const casters = {
       loc: node.loc
     };
   },
-  JSXFragment(node) {
-    return node.children.map(el => cast(el));
+  JSXFragment(node, parent) {
+    let results = node.children.map(el => cast(el, node));
+    if (parent && parent.type === 'ReturnStatement') {
+        return {
+            type: 'Template',
+            body: results,
+            blockParams: [],
+            loc: parent.loc
+        }
+    }
+    return results;
   },
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
@@ -454,7 +463,7 @@ const casters = {
     }
     return result;
   },
-  JSXElement(node) {
+  JSXElement(node, parent) {
     const head = node.openingElement;
     let newNode = {
       type: "ElementNode",
@@ -477,6 +486,16 @@ const casters = {
       }
     });
     newNode.children = node.children.map(el => cast(el));
+
+    if (parent && parent.type === 'ReturnStatement') {
+        return {
+            type: 'Template',
+            body: [newNode],
+            blockParams: [],
+            loc: parent.loc
+        }
+    }
+
     return newNode;
   }
 };
