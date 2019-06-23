@@ -362,6 +362,12 @@ const casters = {
     if (result.value === null) {
       result.value = cast({ type: "StringLiteral", value: "", loc: null });
     }
+
+    if (result.value && result.value.type === "MustacheStatement") {
+        if (result.value.path.type === 'TextNode' && result.value.params.length === 0 && result.value.hash.pairs.length === 0) {
+            result.value = result.value.path;
+        }
+    }
     return result;
   },
   JSXElement(node) {
