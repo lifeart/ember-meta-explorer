@@ -191,7 +191,7 @@ it("can convert dom attributes to normal names", () => {
 });
 
 it("support yield", () => {
-    const input = `(<form>{{this.props.children}}</form>);`;
+    const input = `(<form>{this.props.children}</form>);`;
     assert(toHBS(input), '<form>{{yield}}</form>');
 });
 
