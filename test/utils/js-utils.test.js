@@ -5,6 +5,7 @@
 const utils = require('../../dist/utils/js-utils');
 const { cleanupEmptyArrays } = require('./helpers');
 const processJSFile = utils.processJSFile;
+const parseScriptFile = utils.parseScriptFile;
 
 it('can export some props', () => {
 	assert(Object.keys(utils), ['parseScriptFile', 'processJSFile']);
@@ -281,6 +282,12 @@ it('can handle valueless decorated props without types', ()=>{
 		]
 	});
 });
+
+it('can hanldle jsx files', ()=>{
+	const input =`(<div></div>);`;
+
+	assert(parseScriptFile(input, { filename: Math.random() + "-.tsx", parserOpts: { isTSX: true } }).program.body[0].expression.type, 'JSXElement');
+})
 
 function assert(left, right) {
 	expect(left).toEqual(right);
