@@ -142,39 +142,86 @@ it("can handle numeric component arguments", () => {
 });
 
 it("can transform className on html tags", () => {
-    const input = `(<img className="Avatar" src={props.user.avatarUrl} alt={props.user.name}/>);`;
-    assert(toHBS(input), '<img class="Avatar" src={{@user.avatarUrl}} alt={{@user.name}} />')
+  const input = `(<img className="Avatar" src={props.user.avatarUrl} alt={props.user.name}/>);`;
+  assert(
+    toHBS(input),
+    '<img class="Avatar" src={{@user.avatarUrl}} alt={{@user.name}} />'
+  );
 });
 
 it("can handle basic math, %", () => {
-    const input = `(<div>{total % INTERVAL}</div>);`;
-    assert(toHBS(input), '<div>{{mod this.total this.INTERVAL}}</div>');
+  const input = `(<div>{total % INTERVAL}</div>);`;
+  assert(toHBS(input), "<div>{{mod this.total this.INTERVAL}}</div>");
 });
 
 it("can handle basic math, Math.round", () => {
-    const input = `(<div>{Math.round(age)}</div>);`;
-    assert(toHBS(input), '<div>{{round age}}</div>');
+  const input = `(<div>{Math.round(age)}</div>);`;
+  assert(toHBS(input), "<div>{{round age}}</div>");
 });
 
 it("can handle basic math, Math.ceil", () => {
-    const input = `(<div>{Math.ceil(age)}</div>);`;
-    assert(toHBS(input), '<div>{{ceil age}}</div>');
+  const input = `(<div>{Math.ceil(age)}</div>);`;
+  assert(toHBS(input), "<div>{{ceil age}}</div>");
 });
 
 it("can handle tricky math cases", () => {
-    const input = `(<span>{Math.round(value/INTERVAL/60)} : </span>);`;
-    assert(toHBS(input), '<span>{{round (dev (dev this.value this.INTERVAL) 60)}} : </span>');
+  const input = `(<span>{Math.round(value/INTERVAL/60)} : </span>);`;
+  assert(
+    toHBS(input),
+    "<span>{{round (dev (dev this.value this.INTERVAL) 60)}} : </span>"
+  );
 });
 
 it("support nullable rendering cases", () => {
-    const input = `(<div>{this.state.isDangerAlertShowed ? <DangerAlert text={'Danger'} /> : null}</div>);`;
-    assert(toHBS(input), '<div>{{#if this.state.isDangerAlertShowed}}<DangerAlert @text="Danger"></DangerAlert>{{/if}}</div>');
+  const input = `(<div>{this.state.isDangerAlertShowed ? <DangerAlert text={'Danger'} /> : null}</div>);`;
+  assert(
+    toHBS(input),
+    '<div>{{#if this.state.isDangerAlertShowed}}<DangerAlert @text="Danger"></DangerAlert>{{/if}}</div>'
+  );
 });
 
 it("can add modifiers for dom event handing", () => {
-    const input = `(<form onSubmit={this.onSubmit}></form>);`;
-    assert(toHBS(input), '<form {{on "submit" this.onSubmit}}></form>');
-})
+  const input = `(<form onSubmit={this.onSubmit}></form>);`;
+  assert(toHBS(input), '<form {{on "submit" this.onSubmit}}></form>');
+});
+
+it("can return components map from pure functions input", () => {
+  const input = `
+     function SuccessMessage(props) {
+        return (<div className={'message message_success'}><MessageContent title={props.title}>{props.children}</MessageContent></div>);
+      }
+    
+      function MessageContent(props) {
+        return (<p className="message__content"><h3 className="message__title">{props.title}</h3><p className="message__text">{props.children}</p></p>);
+      }
+      function App(){
+        return (<p><SuccessMessage title="Succes">Done!</SuccessMessage></p>);
+      }
+    `;
+
+  let components = {};
+  let functions = parseScriptFile(input, {
+    filename: "dummy.tsx",
+    parserOpts: { isTSX: true }
+  }).program.body.filter(el => el.type === "FunctionDeclaration");
+
+  functions.forEach(fn => {
+    components[fn.id.name] = print(cast(fn.body.body[0].argument));
+  });
+
+  expect(components).toHaveProperty(
+    "SuccessMessage",
+    '<div class="message message_success"><MessageContent @title={{@title}}>{{@children}}</MessageContent></div>'
+  );
+  expect(components).toHaveProperty(
+    "MessageContent",
+    '<p class="message__content"><h3 class="message__title">{{@title}}</h3><p class="message__text">{{@children}}</p></p>'
+  );
+  expect(components).toHaveProperty(
+    "App",
+    '<p><SuccessMessage @title="Succes">Done!</SuccessMessage></p>'
+  );
+});
 
 function fromJSX(input) {
   return cast(
