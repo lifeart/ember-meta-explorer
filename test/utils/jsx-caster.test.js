@@ -86,6 +86,31 @@ it('keep dom attrs', ()=>{
     assert(toHBS(input),'<src onClick={{this.onClick}}></src>');
 })
 
+it('can handle basic this.props values', ()=>{
+    const input = `(<h1>Hello, {this.props.name}</h1>);`;
+    assert(toHBS(input),'<h1>Hello, {{@name}}</h1>');
+})
+
+it('can handle basic props values', ()=>{
+    const input = `(<h1>Hello, {props.name}</h1>);`;
+    assert(toHBS(input),'<h1>Hello, {{@name}}</h1>');
+})
+
+it('can handle props in simple expressions', ()=>{
+    const input = `(<h1>Hello, {props.name ? <Login /> : <Logout /> }</h1>);`;
+    assert(toHBS(input),'<h1>Hello, {{#if @name}}<Login></Login>{{else}}<Logout></Logout>{{/if}}</h1>');
+});
+
+it('can handle props as component args', ()=>{
+    const input = `(<MyComponent name={this.props.name} />);`;
+    assert(toHBS(input),'<MyComponent @name={{@name}}></MyComponent>');
+});
+
+it('can handle boolean component arguments', ()=>{
+    const input = `(<MyComponent name={false} />);`;
+    assert(toHBS(input),'<MyComponent @name={{false}}></MyComponent>');
+});
+
 function fromJSX(input) {
     return cast(parseScriptFile(input, { filename: Math.random() + "-.tsx", parserOpts: { isTSX: true } }).program.body[0].expression);
 }

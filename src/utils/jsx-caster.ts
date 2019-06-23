@@ -219,12 +219,18 @@ const casters = {
   MemberExpression(node, parent) {
     let items = flattenMemberExpression(node);
     let prefix = hasInScope(items[0]) ? "" : "this.";
+    let original = prefix + items.join(".");
+    let isExternal = original.startsWith('this.props.') || original.startsWith('props.');
+    if (isExternal) {
+        items.shift();
+        original = original.replace('this.', '').replace('props.', '@');
+    }
     return {
       type: "PathExpression",
-      original: prefix + items.join("."),
-      this: prefix ? true : false,
+      original: original,
+      this: isExternal ? false : (prefix ? true : false),
       parts: items,
-      data: false,
+      data: isExternal,
       loc: node.loc
     };
   },
