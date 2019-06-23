@@ -65,7 +65,7 @@ it('can handle complex conditions', ()=>{
     const input = `(
         <div>{isLoggedIn ? (<LogoutButton onClick={this.handleLogoutClick} />) : (<LoginButton onClick={this.handleLoginClick} />)}</div>
       );`;
-    assert(toHBS(input),'<div>{{#if this.isLoggedIn}}<LogoutButton onClick={{this.handleLogoutClick}}></LogoutButton>{{else}}<LoginButton onClick={{this.handleLoginClick}}></LoginButton>{{/if}}</div>');
+    assert(toHBS(input),'<div>{{#if this.isLoggedIn}}<LogoutButton @onClick={{this.handleLogoutClick}}></LogoutButton>{{else}}<LoginButton @onClick={{this.handleLoginClick}}></LoginButton>{{/if}}</div>');
 })
 
 it('can handle complex conditions with fragments', ()=>{
@@ -75,6 +75,16 @@ it('can handle complex conditions with fragments', ()=>{
     assert(toHBS(input),'<div>{{#if this.isLoggedIn}}<LogoutButton></LogoutButton><LogoutButton></LogoutButton>{{else}}<LogoutButton></LogoutButton><LogoutButton></LogoutButton>{{/if}}</div>');
 })
 
+
+it('can assign component props', ()=>{
+    const input = `(<LogoutButton onClick={this.onClick} />);`;
+    assert(toHBS(input),'<LogoutButton @onClick={{this.onClick}}></LogoutButton>');
+})
+
+it('keep dom attrs', ()=>{
+    const input = `(<src onClick={this.onClick} />);`;
+    assert(toHBS(input),'<src onClick={{this.onClick}}></src>');
+})
 
 function fromJSX(input) {
     return cast(parseScriptFile(input, { filename: Math.random() + "-.tsx", parserOpts: { isTSX: true } }).program.body[0].expression);

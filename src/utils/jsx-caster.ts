@@ -43,8 +43,6 @@ function pathExpressionFromParam(node) {
       loc: null
     };
   }
-  console.log("node", node);
-
   return null;
 }
 
@@ -341,13 +339,19 @@ const casters = {
       loc: node.loc
     };
   },
-  JSXAttribute(node) {
+  JSXAttribute(node, parent) {
     let result = {
       type: "AttrNode",
       name: cast(node.name),
       value: cast(node.value),
       loc: node.loc
     };
+
+    let isComponent = parent && parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
+
+    if (isComponent) {
+        result.name = `@` + result.name;
+    }
 
     if (result.value === null) {
       result.value = cast({ type: "StringLiteral", value: "", loc: null });
@@ -369,7 +373,7 @@ const casters = {
     };
 
     head.attributes.forEach(attr => {
-      newNode.attributes.push(cast(attr));
+      newNode.attributes.push(cast(attr, head));
     });
     newNode.children = node.children.map(el => cast(el));
     return newNode;
