@@ -409,6 +409,8 @@ const casters = {
           hash: { type: "Hash", pairs: [], loc: null },
           loc: node.loc
         };
+      } else {
+        result.name = result.name.toLowerCase();
       }
     }
 

@@ -185,6 +185,11 @@ it("can add modifiers for dom event handing", () => {
   assert(toHBS(input), '<form {{on "submit" this.onSubmit}}></form>');
 });
 
+it("can convert dom attributes to normal names", () => {
+    const input = `(<form tabIndex="42"></form>);`;
+    assert(toHBS(input), '<form tabindex="42"></form>');
+});
+
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {
