@@ -325,7 +325,7 @@ const casters = {
   },
   ObjectExpression(node, parent) {
     return {
-      type: parent.type === "ObjectProperty" ? "SubExpression" : "MustacheStatement",
+      type: (parent.type === "ObjectProperty" || parent.type === "ArrayExpression") ? "SubExpression" : "MustacheStatement",
       params: [],
       loc: node.loc,
       escaped: true,
@@ -351,9 +351,32 @@ const casters = {
       }
     };
   },
+  ArrayExpression(node, parent) {
+    return {
+      type: (parent.type === "ObjectProperty" || parent.type === "ArrayExpression") ? "SubExpression" : "MustacheStatement",
+      params: node.elements.map((el)=> cast(el, node)),
+      loc: node.loc,
+      escaped: true,
+      hash: {
+        type: "Hash",
+        loc: null,
+        pairs: []
+      },
+      path: {
+        type: "PathExpression",
+        original: "array",
+        this: false,
+        parts: ["array"],
+        data: false,
+        loc: null
+      }
+    };
+  },
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
-    if (node.expression.type === "ObjectExpression") {
+    if (node.expression.type === "ArrayExpression") {
+      return cast(expression, node);
+    } else if (node.expression.type === "ObjectExpression") {
       return cast(expression, node);
     } else if (node.expression.type === "JSXEmptyExpression") {
       return cast(expression, node);
@@ -422,7 +445,7 @@ const casters = {
       parent &&
       (parent.type === "CallExpression" ||
         parent.type === "BinaryExpression" ||
-        parent.type === "ConditionalExpression" || parent.type === "ObjectProperty")
+        parent.type === "ConditionalExpression" || parent.type === "ObjectProperty" || parent.type === "ArrayExpression")
     ) {
       return {
         type: "StringLiteral",
