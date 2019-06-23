@@ -372,9 +372,49 @@ const casters = {
       }
     };
   },
+  TemplateElement(node, parent) {
+    return {
+        type: "StringLiteral",
+        value: node.value.cooked,
+        original: node.value.raw,
+        loc: node.loc
+      };
+  },
+  TemplateLiteral(node, parent) {
+    let expressions = node.expressions;
+    let quasis = node.quasis;
+    let parts = [];
+    quasis.forEach((q)=>{
+        parts.push(q);
+        if (expressions.length) {
+            parts.push(expressions.shift());
+        }
+    });
+    return {
+        type: (parent.type === "ObjectProperty" || parent.type === "ArrayExpression") ? "SubExpression" : "MustacheStatement",
+        params: parts.map((item) => cast(item, node)),
+        loc: node.loc,
+        escaped: true,
+        hash: {
+          type: "Hash",
+          loc: null,
+          pairs: []
+        },
+        path: {
+          type: "PathExpression",
+          original: "concat",
+          this: false,
+          parts: ["concat"],
+          data: false,
+          loc: null
+        }
+    };
+  },
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
-    if (node.expression.type === "ArrayExpression") {
+    if (node.expression.type === "TemplateLiteral") {
+      return cast(expression, node);
+    } else if (node.expression.type === "ArrayExpression") {
       return cast(expression, node);
     } else if (node.expression.type === "ObjectExpression") {
       return cast(expression, node);

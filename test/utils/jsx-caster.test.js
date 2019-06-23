@@ -223,6 +223,11 @@ it("support nested arrays", () => {
     assert(toHBS(input), '<MyComponent @data={{array 1 "2" (array 3 true) (hash foo=(array 42 "11"))}}></MyComponent>');
 });
 
+it("support template strings using concat", () => {
+    const input = '(<MyComponent name={`foo${bar}1`} />);';
+    assert(toHBS(input), '<MyComponent @name={{concat "foo" this.bar "1"}}></MyComponent>');
+});
+
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {
