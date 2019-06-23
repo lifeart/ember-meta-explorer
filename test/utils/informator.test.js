@@ -117,6 +117,15 @@ it("can extract simple JSX components from file", () => {
 		MessageContent: "<p class=\"message__content\"><h3 class=\"message__title\">{{@title}}</h3><p class=\"message__text\">{{yield}}</p></p>",
 		SuccessMessage: "<div class=\"message message_success\"><MessageContent @title={{@title}}>{{yield}}</MessageContent></div>"
 	});
+});
+
+it('can extract component, returning fragment', () => {
+	const input = `function FragmentedComponent(props) {
+		return (<><div></div><div></div></>);
+	}`;
+	assert(extractJSXComponents(input), {
+		FragmentedComponent: "<div></div><div></div>"
+	});
 })
 
 function assert(left, right) {

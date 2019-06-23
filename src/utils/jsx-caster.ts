@@ -1,6 +1,6 @@
 var scopedVariables = [];
 
-function operatorToPath(operator) {
+function operatorToPath(operator, parent = null) {
   const operationMap = {
     if: "if",
     on: "on",
@@ -21,11 +21,22 @@ function operatorToPath(operator) {
     "%": "mod"
   };
 
+  let resolvedResult = operationMap[operator];
+  if (
+    parent &&
+    parent.type === "BinaryExpression" &&
+    parent.left.type === "StringLiteral"
+  ) {
+    if (resolvedResult === "inc") {
+      resolvedResult = "concat";
+    }
+  }
+
   return {
     type: "PathExpression",
-    original: operationMap[operator],
+    original: resolvedResult,
     this: false,
-    parts: [operationMap[operator]],
+    parts: [resolvedResult],
     data: false,
     loc: null
   };
@@ -188,14 +199,16 @@ const casters = {
       type: "SubExpression",
       hash: { type: "Hash", pairs: [], loc: null },
       loc: node.loc,
-      path: operatorToPath(node.operator),
+      path: operatorToPath(node.operator, node),
       params: [cast(node.left, node), cast(node.right, node)]
     };
   },
   UpdateExpression(node, parent) {
     return {
       type:
-        parent && parent.type === "JSXExpressionContainer" ? "MustacheStatement" : "SubExpression",
+        parent && parent.type === "JSXExpressionContainer"
+          ? "MustacheStatement"
+          : "SubExpression",
       hash: { type: "Hash", pairs: [], loc: null },
       loc: node.loc,
       path: operatorToPath(node.operator),
@@ -309,12 +322,123 @@ const casters = {
       loc: node.loc
     };
   },
-  JSXFragment(node) {
-    return node.children.map(el => cast(el));
+  JSXFragment(node, parent) {
+    let results = node.children.map(el => cast(el, node));
+    if (parent && parent.type === "ReturnStatement") {
+      return {
+        type: "Template",
+        body: results,
+        blockParams: [],
+        loc: parent.loc
+      };
+    }
+    return results;
+  },
+  ObjectExpression(node, parent) {
+    return {
+      type:
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+          ? "SubExpression"
+          : "MustacheStatement",
+      params: [],
+      loc: node.loc,
+      escaped: true,
+      hash: {
+        type: "Hash",
+        loc: null,
+        pairs: node.properties.map(prop => {
+          return {
+            type: "HashPair",
+            key: prop.key.name,
+            value: cast(prop.value, prop),
+            loc: prop.loc
+          };
+        })
+      },
+      path: {
+        type: "PathExpression",
+        original: "hash",
+        this: false,
+        parts: ["hash"],
+        data: false,
+        loc: null
+      }
+    };
+  },
+  ArrayExpression(node, parent) {
+    return {
+      type:
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+          ? "SubExpression"
+          : "MustacheStatement",
+      params: node.elements.map(el => cast(el, node)),
+      loc: node.loc,
+      escaped: true,
+      hash: {
+        type: "Hash",
+        loc: null,
+        pairs: []
+      },
+      path: {
+        type: "PathExpression",
+        original: "array",
+        this: false,
+        parts: ["array"],
+        data: false,
+        loc: null
+      }
+    };
+  },
+  TemplateElement(node, parent) {
+    return {
+      type: "StringLiteral",
+      value: node.value.cooked,
+      original: node.value.raw,
+      loc: node.loc
+    };
+  },
+  TemplateLiteral(node, parent) {
+    let expressions = node.expressions;
+    let quasis = node.quasis;
+    let parts = [];
+    quasis.forEach(q => {
+      parts.push(q);
+      if (expressions.length) {
+        parts.push(expressions.shift());
+      }
+    });
+    return {
+      type:
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+          ? "SubExpression"
+          : "MustacheStatement",
+      params: parts.map(item => cast(item, node)),
+      loc: node.loc,
+      escaped: true,
+      hash: {
+        type: "Hash",
+        loc: null,
+        pairs: []
+      },
+      path: {
+        type: "PathExpression",
+        original: "concat",
+        this: false,
+        parts: ["concat"],
+        data: false,
+        loc: null
+      }
+    };
   },
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
-    if (node.expression.type === "JSXEmptyExpression") {
+    if (node.expression.type === "TemplateLiteral") {
+      return cast(expression, node);
+    } else if (node.expression.type === "ArrayExpression") {
+      return cast(expression, node);
+    } else if (node.expression.type === "ObjectExpression") {
+      return cast(expression, node);
+    } else if (node.expression.type === "JSXEmptyExpression") {
       return cast(expression, node);
     } else if (node.expression.type === "UpdateExpression") {
       return cast(expression, node);
@@ -362,8 +486,8 @@ const casters = {
         );
       }
     } else if (expression.type === "BinaryExpression") {
-      result.path = operatorToPath(expression.operator);
-      result.params = [cast(expression.left), cast(expression.right)];
+      result.path = operatorToPath(expression.operator, expression);
+      result.params = [cast(expression.left, expression), cast(expression.right, expression)];
     } else {
       result.params = [];
       result.path = cast(node.expression);
@@ -381,7 +505,9 @@ const casters = {
       parent &&
       (parent.type === "CallExpression" ||
         parent.type === "BinaryExpression" ||
-        parent.type === "ConditionalExpression")
+        parent.type === "ConditionalExpression" ||
+        parent.type === "ObjectProperty" ||
+        parent.type === "ArrayExpression")
     ) {
       return {
         type: "StringLiteral",
@@ -454,7 +580,7 @@ const casters = {
     }
     return result;
   },
-  JSXElement(node) {
+  JSXElement(node, parent) {
     const head = node.openingElement;
     let newNode = {
       type: "ElementNode",
@@ -477,6 +603,16 @@ const casters = {
       }
     });
     newNode.children = node.children.map(el => cast(el));
+
+    if (parent && parent.type === "ReturnStatement") {
+      return {
+        type: "Template",
+        body: [newNode],
+        blockParams: [],
+        loc: parent.loc
+      };
+    }
+
     return newNode;
   }
 };
