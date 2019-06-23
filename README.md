@@ -1,5 +1,9 @@
 # NOOP
 
+### ember-meta-explorer
+
+created as collection of handy functions to get metadata from an ember app and related stuff
+
 ```js
 import { 
   processJSFile, parseScriptFile, processTemplate, 
