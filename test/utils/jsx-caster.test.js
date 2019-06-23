@@ -100,7 +100,7 @@ it("can assign component props", () => {
 
 it("keep dom attrs", () => {
   const input = `(<src onClick={this.onClick} />);`;
-  assert(toHBS(input), "<src onClick={{this.onClick}}></src>");
+  assert(toHBS(input), '<src {{on "click" this.onClick}}></src>');
 });
 
 it("can handle basic this.props values", () => {
@@ -162,8 +162,18 @@ it("can handle basic math, Math.ceil", () => {
 });
 
 it("can handle tricky math cases", () => {
-    const input = `(<span>{Math.round(value/INTERVAL/60)} : </span>)`;
-    assert(toHBS(input), '<span>{{round (dev (dev this.value this.INTERNAL) 60)}} : </span>');
+    const input = `(<span>{Math.round(value/INTERVAL/60)} : </span>);`;
+    assert(toHBS(input), '<span>{{round (dev (dev this.value this.INTERVAL) 60)}} : </span>');
+});
+
+it("support nullable rendering cases", () => {
+    const input = `(<div>{this.state.isDangerAlertShowed ? <DangerAlert text={'Danger'} /> : null}</div>);`;
+    assert(toHBS(input), '<div>{{#if this.state.isDangerAlertShowed}}<DangerAlert @text="Danger"></DangerAlert>{{/if}}</div>');
+});
+
+it("can add modifiers for dom event handing", () => {
+    const input = `(<form onSubmit={this.onSubmit}></form>);`;
+    assert(toHBS(input), '<form {{on "submit" this.onSubmit}}></form>');
 })
 
 function fromJSX(input) {

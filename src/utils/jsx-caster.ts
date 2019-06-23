@@ -3,6 +3,7 @@ var scopedVariables = [];
 function operatorToPath(operator) {
   const operationMap = {
     if: "if",
+    on: "on",
     "+": "inc",
     "-": "dec",
     "&&": "and",
@@ -125,7 +126,7 @@ const casters = {
       (node.alternate.type === "JSXElement" ||
         node.alternate.type === "JSXFragment");
     if (hasComplexLeft || hasComplexRight) {
-      return {
+      let result = {
         type: "BlockStatement",
         hash: { type: "Hash", pairs: [], loc: null },
         path: operatorToPath("if"),
@@ -152,6 +153,15 @@ const casters = {
             }
           : null
       };
+
+      if (
+        result.inverse &&
+        !result.inverse.body.filter(el => el.type !== "NullLiteral").length
+      ) {
+        result.inverse = null;
+      }
+
+      return result;
     }
 
     return {
@@ -217,24 +227,34 @@ const casters = {
   JSXIdentifier(node) {
     return node.name;
   },
+  NullLiteral(node, parent) {
+    let result = {
+      type: "NullLiteral",
+      value: null,
+      original: null,
+      loc: node.log
+    };
+    return result;
+  },
   MemberExpression(node, parent) {
     let items = flattenMemberExpression(node);
     let prefix = hasInScope(items[0]) ? "" : "this.";
     let original = prefix + items.join(".");
-    let isExternal = original.startsWith('this.props.') || original.startsWith('props.');
+    let isExternal =
+      original.startsWith("this.props.") || original.startsWith("props.");
     if (isExternal) {
-        items.shift();
-        original = original.replace('this.', '').replace('props.', '@');
+      items.shift();
+      original = original.replace("this.", "").replace("props.", "@");
     }
-    
-    if (original.startsWith('this.Math.')) {
-        original = original.replace('this.Math.', '');
-        items = original.split('.');
+
+    if (original.startsWith("this.Math.")) {
+      original = original.replace("this.Math.", "");
+      items = original.split(".");
     }
     return {
       type: "PathExpression",
       original: original,
-      this: isExternal ? false : (prefix ? true : false),
+      this: isExternal ? false : prefix ? true : false,
       parts: items,
       data: isExternal,
       loc: node.loc
@@ -359,14 +379,37 @@ const casters = {
       loc: node.loc
     };
 
-    let isComponent = parent && parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
+    let isComponent =
+      parent &&
+      parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
 
     if (isComponent) {
-        result.name = `@` + result.name;
+      result.name = `@` + result.name;
     } else {
-        if (result.name === 'className') {
-            result.name = 'class';
-        }
+      if (result.name === "className") {
+        result.name = "class";
+      } else if (
+        result.name.startsWith("on") &&
+        result.name.charAt(2) === result.name.charAt(2).toUpperCase()
+      ) {
+        let eventName = result.name.replace("on", "");
+        eventName = eventName.charAt(0).toLowerCase() + eventName.slice(1);
+        return {
+          type: "ElementModifierStatement",
+          path: operatorToPath("on"),
+          params: [
+            {
+              type: "StringLiteral",
+              loc: null,
+              value: eventName,
+              original: eventName
+            },
+            result.value.path
+          ],
+          hash: { type: "Hash", pairs: [], loc: null },
+          loc: node.loc
+        };
+      }
     }
 
     if (result.value === null) {
@@ -374,9 +417,13 @@ const casters = {
     }
 
     if (result.value && result.value.type === "MustacheStatement") {
-        if (result.value.path.type === 'TextNode' && result.value.params.length === 0 && result.value.hash.pairs.length === 0) {
-            result.value = result.value.path;
-        }
+      if (
+        result.value.path.type === "TextNode" &&
+        result.value.params.length === 0 &&
+        result.value.hash.pairs.length === 0
+      ) {
+        result.value = result.value.path;
+      }
     }
     return result;
   },
@@ -395,7 +442,12 @@ const casters = {
     };
 
     head.attributes.forEach(attr => {
-      newNode.attributes.push(cast(attr, head));
+      let maybeAttr = cast(attr, head);
+      if (maybeAttr.type !== "ElementModifierStatement") {
+        newNode.attributes.push(maybeAttr);
+      } else {
+        newNode.modifiers.push(maybeAttr);
+      }
     });
     newNode.children = node.children.map(el => cast(el));
     return newNode;
