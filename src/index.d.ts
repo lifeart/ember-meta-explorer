@@ -41,3 +41,4 @@ export function processTemplate(template: string): any;
 export function processJSFile(data: string, relativePath: string): IJsMeta;
 export function parseScriptFile(data: string, babelOptions?: object): any;
 export function rebelObject(paths: string[], context?: object): object;
+export function extractJSXComponents(jsxContent: string): any;
