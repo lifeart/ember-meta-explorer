@@ -56,12 +56,32 @@ it('can handle simple logical expression', ()=>{
     assert(toHBS(input), '<div>{{#if (gt 1 0)}}<h2></h2>{{/if}}</div>');
 });
 
+it('can handle ternary string case', ()=>{
+    const input = `(<div>User <b>{isLoggedIn ? 'logged' : 'not logged'}</b> inside admin page.</div>);`;
+    assert(toHBS(input), '<div>User <b>{{if this.isLoggedIn "logged" "not logged"}}</b> inside admin page.</div>');
+})
+
+it('can handle complex conditions', ()=>{
+    const input = `(
+        <div>{isLoggedIn ? (<LogoutButton onClick={this.handleLogoutClick} />) : (<LoginButton onClick={this.handleLoginClick} />)}</div>
+      );`;
+    assert(toHBS(input),'<div>{{#if this.isLoggedIn}}<LogoutButton onClick={{this.handleLogoutClick}}></LogoutButton>{{else}}<LoginButton onClick={{this.handleLoginClick}}></LoginButton>{{/if}}</div>');
+})
+
+it('can handle complex conditions with fragments', ()=>{
+    const input = `(
+        <div>{isLoggedIn ? (<><LogoutButton /><LogoutButton /></>) : (<><LogoutButton /><LogoutButton /></>)}</div>
+      );`;
+    assert(toHBS(input),'<div>{{#if this.isLoggedIn}}<LogoutButton></LogoutButton><LogoutButton></LogoutButton>{{else}}<LogoutButton></LogoutButton><LogoutButton></LogoutButton>{{/if}}</div>');
+})
+
+
 function fromJSX(input) {
     return cast(parseScriptFile(input, { filename: Math.random() + "-.tsx", parserOpts: { isTSX: true } }).program.body[0].expression);
 }
 
 function toHBS(input) {
-    return print(fromJSX(input));
+    return print(fromJSX(input)).trim();
 }
 
 function assert(left, right) {

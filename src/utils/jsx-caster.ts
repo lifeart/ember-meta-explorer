@@ -1,4 +1,3 @@
-
 var scopedVariables = [];
 
 function operatorToPath(operator) {
@@ -113,7 +112,49 @@ const casters = {
     };
   },
   ConditionalExpression(node, parent) {
-    const nodeType = parent && parent.type === 'ConditionalExpression' ? 'SubExpression' : 'MustacheStatement';
+    const nodeType =
+      parent && parent.type === "ConditionalExpression"
+        ? "SubExpression"
+        : "MustacheStatement";
+
+    let hasComplexLeft =
+      node.consequent &&
+      (node.consequent.type === "JSXElement" ||
+        node.consequent.type === "JSXFragment");
+    let hasComplexRight =
+      node.alternate &&
+      (node.alternate.type === "JSXElement" ||
+        node.alternate.type === "JSXFragment");
+    if (hasComplexLeft || hasComplexRight) {
+      return {
+        type: "BlockStatement",
+        hash: { type: "Hash", pairs: [], loc: null },
+        path: operatorToPath("if"),
+        loc: node.loc,
+        params: [cast(node.test, node)],
+        program: {
+          type: "Block",
+          body:
+            node.consequent.type === "JSXFragment"
+              ? cast(node.consequent, node)
+              : [cast(node.consequent, node)],
+          blockParams: [],
+          log: null
+        },
+        inverse: node.alternate
+          ? {
+              type: "Block",
+              body:
+                node.alternate.type === "JSXFragment"
+                  ? cast(node.alternate, node)
+                  : [cast(node.alternate, node)],
+              blockParams: [],
+              log: null
+            }
+          : null
+      };
+    }
+
     return {
       type: nodeType,
       hash: { type: "Hash", pairs: [], loc: null },
@@ -123,7 +164,9 @@ const casters = {
         cast(node.test, node),
         cast(node.consequent, node),
         cast(node.alternate, node)
-      ]
+      ],
+      program: [],
+      inverse: []
     };
   },
   BinaryExpression(node) {
@@ -143,7 +186,10 @@ const casters = {
     let result = {
       type: "Block",
       blockParams: blockParams,
-      body: [cast(node.body, node)],
+      body:
+        node.body.type === "JSXFragment"
+          ? cast(node.body, node)
+          : [cast(node.body, node)],
       loc: null
     };
     decreaseScope(blockParams);
@@ -151,7 +197,11 @@ const casters = {
   },
 
   CallExpression(node, parent) {
-    if (parent && (parent.type === "BinaryExpression" || parent.type === "ConditionalExpression")) {
+    if (
+      parent &&
+      (parent.type === "BinaryExpression" ||
+        parent.type === "ConditionalExpression")
+    ) {
       increaseScope([node.callee.name]);
       let result = {
         type: "SubExpression",
@@ -218,7 +268,9 @@ const casters = {
     } else if (node.expression.type === "LogicalExpression") {
       return {
         type: "BlockStatement",
-        path: operatorToPath(expression.operator === '&&' ? 'if' : expression.operator),
+        path: operatorToPath(
+          expression.operator === "&&" ? "if" : expression.operator
+        ),
         params: [cast(expression.left, expression)],
         loc: expression.loc,
         inverse: null,
@@ -272,7 +324,9 @@ const casters = {
   StringLiteral(node, parent = null) {
     if (
       parent &&
-      (parent.type === "CallExpression" || parent.type === "BinaryExpression")
+      (parent.type === "CallExpression" ||
+        parent.type === "BinaryExpression" ||
+        parent.type === "ConditionalExpression")
     ) {
       return {
         type: "StringLiteral",
