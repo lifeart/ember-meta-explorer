@@ -203,6 +203,16 @@ it("support yield", () => {
     assert(toHBS(input), '<form>{{yield}}</form>');
 });
 
+it("support hashes", () => {
+    const input = `(<MyComponent data={{name: 1, label: "d", key: false, value: record}} />);`;
+    assert(toHBS(input), '<MyComponent @data={{hash name=1 label="d" key=false value=this.record}}></MyComponent>');
+});
+
+it("support hashes as subparams", () => {
+    const input = `(<MyComponent data={{name: { value: 42 }}} />);`;
+    assert(toHBS(input), '<MyComponent @data={{hash name=(hash value=42)}}></MyComponent>');
+});
+
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {

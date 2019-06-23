@@ -195,7 +195,9 @@ const casters = {
   UpdateExpression(node, parent) {
     return {
       type:
-        parent && parent.type === "JSXExpressionContainer" ? "MustacheStatement" : "SubExpression",
+        parent && parent.type === "JSXExpressionContainer"
+          ? "MustacheStatement"
+          : "SubExpression",
       hash: { type: "Hash", pairs: [], loc: null },
       loc: node.loc,
       path: operatorToPath(node.operator),
@@ -311,19 +313,49 @@ const casters = {
   },
   JSXFragment(node, parent) {
     let results = node.children.map(el => cast(el, node));
-    if (parent && parent.type === 'ReturnStatement') {
-        return {
-            type: 'Template',
-            body: results,
-            blockParams: [],
-            loc: parent.loc
-        }
+    if (parent && parent.type === "ReturnStatement") {
+      return {
+        type: "Template",
+        body: results,
+        blockParams: [],
+        loc: parent.loc
+      };
     }
     return results;
   },
+  ObjectExpression(node, parent) {
+    return {
+      type: parent.type === "ObjectProperty" ? "SubExpression" : "MustacheStatement",
+      params: [],
+      loc: node.loc,
+      escaped: true,
+      hash: {
+        type: "Hash",
+        loc: null,
+        pairs: node.properties.map(prop => {
+          return {
+            type: "HashPair",
+            key: prop.key.name,
+            value: cast(prop.value, prop),
+            loc: prop.loc
+          };
+        })
+      },
+      path: {
+        type: "PathExpression",
+        original: "hash",
+        this: false,
+        parts: ["hash"],
+        data: false,
+        loc: null
+      }
+    };
+  },
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
-    if (node.expression.type === "JSXEmptyExpression") {
+    if (node.expression.type === "ObjectExpression") {
+      return cast(expression, node);
+    } else if (node.expression.type === "JSXEmptyExpression") {
       return cast(expression, node);
     } else if (node.expression.type === "UpdateExpression") {
       return cast(expression, node);
@@ -390,7 +422,7 @@ const casters = {
       parent &&
       (parent.type === "CallExpression" ||
         parent.type === "BinaryExpression" ||
-        parent.type === "ConditionalExpression")
+        parent.type === "ConditionalExpression" || parent.type === "ObjectProperty")
     ) {
       return {
         type: "StringLiteral",
@@ -487,13 +519,13 @@ const casters = {
     });
     newNode.children = node.children.map(el => cast(el));
 
-    if (parent && parent.type === 'ReturnStatement') {
-        return {
-            type: 'Template',
-            body: [newNode],
-            blockParams: [],
-            loc: parent.loc
-        }
+    if (parent && parent.type === "ReturnStatement") {
+      return {
+        type: "Template",
+        body: [newNode],
+        blockParams: [],
+        loc: parent.loc
+      };
     }
 
     return newNode;
