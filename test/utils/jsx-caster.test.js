@@ -203,6 +203,36 @@ it("support yield", () => {
     assert(toHBS(input), '<form>{{yield}}</form>');
 });
 
+it("support hashes", () => {
+    const input = `(<MyComponent data={{name: 1, label: "d", key: false, value: record}} />);`;
+    assert(toHBS(input), '<MyComponent @data={{hash name=1 label="d" key=false value=this.record}}></MyComponent>');
+});
+
+it("support hashes as subparams", () => {
+    const input = `(<MyComponent data={{name: { value: 42 }}} />);`;
+    assert(toHBS(input), '<MyComponent @data={{hash name=(hash value=42)}}></MyComponent>');
+});
+
+it("support basic arrays", () => {
+    const input = `(<MyComponent data={[1,"2",false,{ foo: 1 }]} />);`;
+    assert(toHBS(input), '<MyComponent @data={{array 1 "2" false (hash foo=1)}}></MyComponent>');
+});
+
+it("support nested arrays", () => {
+    const input = `(<MyComponent data={[1,"2",[3, true],{ foo: [ 42, "11" ] }]} />);`;
+    assert(toHBS(input), '<MyComponent @data={{array 1 "2" (array 3 true) (hash foo=(array 42 "11"))}}></MyComponent>');
+});
+
+it("support template strings using concat", () => {
+    const input = '(<MyComponent name={`foo${bar}1`} />);';
+    assert(toHBS(input), '<MyComponent @name={{concat "foo" this.bar "1"}}></MyComponent>');
+});
+
+it("support string concatination", ()=>{
+    const input = '(<MyComponent name={"3" + 2} />);';
+    assert(toHBS(input), '<MyComponent @name={{concat "3" 2}}></MyComponent>');
+});
+
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {
