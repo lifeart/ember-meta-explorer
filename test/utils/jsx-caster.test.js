@@ -141,6 +141,31 @@ it("can handle numeric component arguments", () => {
   assert(toHBS(input), "<MyComponent @name={{42}}></MyComponent>");
 });
 
+it("can transform className on html tags", () => {
+    const input = `(<img className="Avatar" src={props.user.avatarUrl} alt={props.user.name}/>);`;
+    assert(toHBS(input), '<img class="Avatar" src={{@user.avatarUrl}} alt={{@user.name}} />')
+});
+
+it("can handle basic math, %", () => {
+    const input = `(<div>{total % INTERVAL}</div>);`;
+    assert(toHBS(input), '<div>{{mod this.total this.INTERVAL}}</div>');
+});
+
+it("can handle basic math, Math.round", () => {
+    const input = `(<div>{Math.round(age)}</div>);`;
+    assert(toHBS(input), '<div>{{round age}}</div>');
+});
+
+it("can handle basic math, Math.ceil", () => {
+    const input = `(<div>{Math.ceil(age)}</div>);`;
+    assert(toHBS(input), '<div>{{ceil age}}</div>');
+});
+
+it("can handle tricky math cases", () => {
+    const input = `(<span>{Math.round(value/INTERVAL/60)} : </span>)`;
+    assert(toHBS(input), '<span>{{round (dev (dev this.value this.INTERNAL) 60)}} : </span>');
+})
+
 function fromJSX(input) {
   return cast(
     parseScriptFile(input, {

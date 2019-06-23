@@ -11,7 +11,8 @@ function operatorToPath(operator) {
     "<": "lt",
     ">=": "gte",
     "<=": "lte",
-    "/": "dev"
+    "/": "dev",
+    "%": "mod"
   };
 
   return {
@@ -225,6 +226,11 @@ const casters = {
         items.shift();
         original = original.replace('this.', '').replace('props.', '@');
     }
+    
+    if (original.startsWith('this.Math.')) {
+        original = original.replace('this.Math.', '');
+        items = original.split('.');
+    }
     return {
       type: "PathExpression",
       original: original,
@@ -357,6 +363,10 @@ const casters = {
 
     if (isComponent) {
         result.name = `@` + result.name;
+    } else {
+        if (result.name === 'className') {
+            result.name = 'class';
+        }
     }
 
     if (result.value === null) {
