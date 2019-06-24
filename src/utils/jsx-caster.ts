@@ -337,7 +337,7 @@ const casters = {
   ObjectExpression(node, parent) {
     return {
       type:
-        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression" || parent.type === "SequenceExpression"
           ? "SubExpression"
           : "MustacheStatement",
       params: [],
@@ -368,7 +368,7 @@ const casters = {
   ArrayExpression(node, parent) {
     return {
       type:
-        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression" || parent.type === "SequenceExpression"
           ? "SubExpression"
           : "MustacheStatement",
       params: node.elements.map(el => cast(el, node)),
@@ -432,7 +432,9 @@ const casters = {
   },
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
-    if (node.expression.type === "TemplateLiteral") {
+    if (node.expression.type === "SequenceExpression") {
+      return cast(expression, node);
+    } else if (node.expression.type === "TemplateLiteral") {
       return cast(expression, node);
     } else if (node.expression.type === "ArrayExpression") {
       return cast(expression, node);
@@ -507,6 +509,7 @@ const casters = {
         parent.type === "BinaryExpression" ||
         parent.type === "ConditionalExpression" ||
         parent.type === "ObjectProperty" ||
+        parent.type === "SequenceExpression" ||
         parent.type === "ArrayExpression")
     ) {
       return {
@@ -522,6 +525,9 @@ const casters = {
       loc: node.loc
     };
   },
+  SequenceExpression(node, parent) {
+    return node.expressions.map((exp) => cast(exp, node));
+  },
   JSXAttribute(node, parent) {
     let result = {
       type: "AttrNode",
@@ -533,6 +539,27 @@ const casters = {
     let isComponent =
       parent &&
       parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
+
+    if (result.name.startsWith('mod-')) {
+      let modName = result.name.replace('mod-', '');
+      if (result.value.type === 'MustacheStatement') {
+        result.value.type = 'SubExpression';
+      }
+      return {
+        type: "ElementModifierStatement",
+        path: {
+          type: "PathExpression",
+          original: modName,
+          this: false,
+          parts: [modName],
+          data: false,
+          loc: null
+        },
+        params: Array.isArray(result.value) ? result.value : [result.value],
+        hash: { type: "Hash", pairs: [], loc: null },
+        loc: node.loc
+      };
+    }
 
     if (isComponent) {
       if (result.name.startsWith('attr-')) {

@@ -168,7 +168,7 @@ it("can handle tricky math cases", () => {
   const input = `(<span>{Math.round(value/INTERVAL/60)} : </span>);`;
   assert(
     toHBS(input),
-    "<span>{{round (dev (dev this.value this.INTERVAL) 60)}} : </span>"
+    "<span>{{round (div (div this.value this.INTERVAL) 60)}} : </span>"
   );
 });
 
@@ -257,6 +257,23 @@ it("support this refs", () => {
 it("support ...attributes", () => {
   const input = '(<div attributes></div>);';
   assert(toHBS(input), '<div ...attributes></div>');
+});
+
+it("support modifiers for DOM elements", () => {
+  const input = '(<div mod-style={{color: "face8d"}}></div>);';
+  assert(toHBS(input), '<div {{style (hash color="face8d")}}></div>');
+});
+it("support modifiers for Components elements", () => {
+  const input = '(<MyComponent mod-style={{color: "face8d"}} />);';
+  assert(toHBS(input), '<MyComponent {{style (hash color="face8d")}}></MyComponent>');
+});
+it("support array as modifier argument", () => {
+  const input = '(<MyComponent mod-style={[1]} />);';
+  assert(toHBS(input), '<MyComponent {{style (array 1)}}></MyComponent>');
+});
+it("support modifier having multiple arguments", () => {
+  const input = '(<MyComponent mod-style={[1],2,"3",foo,{ color: "green"}} />);';
+  assert(toHBS(input), '<MyComponent {{style (array 1) 2 "3" this.foo (hash color="green")}}></MyComponent>');
 });
 
 it("can return components map from pure functions input", () => {
