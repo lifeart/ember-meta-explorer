@@ -291,6 +291,7 @@ export function extractComponentInformationFromMeta(meta: any) {
 }
 
 var extractedComponents = {};
+var declarations = {};
 
 function hasValidJSXEntryNode(item) {
 	return item && (item.type === 'JSXElement' || item.type === 'JSXFragment');
@@ -298,29 +299,37 @@ function hasValidJSXEntryNode(item) {
 
 function addDeclarations(content, declarations) {
 	let finalResult = content;
+	let hashes = [];
+	let contextName = 'ctx';
 	Object.keys(declarations).forEach((key)=>{
 		let value = declarations[key];
-		finalResult = finalResult.split('{{this.' + key + '}}').join(value);
-		finalResult = finalResult.split('this.' + key + ' ').join(value + ' ');
+		finalResult = finalResult.split('this.' + key).join(`${contextName}.${key}`);
+		if (typeof value === 'string') {
+			hashes.push(`${key}="${value}"`);
+		} else if (typeof value === 'number') {
+			hashes.push(`${key}=${value}`);
+		} else if (typeof value === 'boolean') {
+			hashes.push(`${key}=${value}`);
+		}
 	});
-	return finalResult;
+	if (hashes.length === 0) {
+		return content;
+	}
+	let output = `{{#let (hash ${hashes.join(' ')}) as |ctx|}}${finalResult}{{/let}}`;
+	return output;
 }
 
-function addComponent(name, content, valuesDeclatation) {
+function addComponent(name, content) {
 	let uniqName = name;
 	if (name in extractedComponents) {
 		uniqName = uniqName + '_' + Math.random().toString(36).slice(-6);
 	}
 	extractedComponents[uniqName] = content;
-	const declarated = addDeclarations(content, valuesDeclatation);
-	if (content !== declarated) {
-		extractedComponents[uniqName + '_declarated'] = declarated;
-	}
 }
 
 function jsxComponentExtractor() {
   extractedComponents = {};
-  var declarations = {};
+ declarations = {};
   return {
     FunctionDeclaration(path) {
       let node = path.node;
@@ -329,7 +338,7 @@ function jsxComponentExtractor() {
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
-			addComponent(node.id.name, print(cast(arg, result[0])), declarations);
+			addComponent(node.id.name, print(cast(arg, result[0])));
           }
         }
       }
@@ -341,7 +350,7 @@ function jsxComponentExtractor() {
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
-			addComponent('FunctionExpression', print(cast(arg, result[0])), declarations);
+			addComponent('FunctionExpression', print(cast(arg, result[0])));
           }
         }
       }
@@ -353,7 +362,7 @@ function jsxComponentExtractor() {
 		  if (result.length) {
 			const arg = result[0].argument;
 			if (hasValidJSXEntryNode(arg)) {
-				addComponent(node.key.name, print(cast(arg, result[0])), declarations);
+				addComponent(node.key.name, print(cast(arg, result[0])));
 			}
 		  }
 		}
@@ -370,10 +379,25 @@ function jsxComponentExtractor() {
 					declarations[node.id.name] =  node.init.value;
 				}
 			}
+		} else if (node.id && node.id.type === 'ArrayPattern') {
+			if (node.init && node.init.type === 'CallExpression') {
+				if (node.init.callee.type === 'Identifier' && node.init.callee.name === 'useState') {
+					node.id.elements.forEach((el, index)=>{
+						if (el.type === 'Identifier') {
+							if (node.init.arguments[index]) {
+								const argType = node.init.arguments[index].type;
+								if (['StringLiteral', 'NumericLiteral', 'BooleanLiteral'].includes(argType)) {
+									declarations[el.name] =   node.init.arguments[index].value;
+								}
+							}
+						}
+					});
+				}
+			}
 		}
 		if (node.id && node.id.name && node.init) {
 			if (hasValidJSXEntryNode(node.init)) {
-				addComponent(node.id.name, print(cast(node.init, node)), declarations);
+				addComponent(node.id.name, print(cast(node.init, node)));
 			}
 		}
 	},
@@ -381,13 +405,13 @@ function jsxComponentExtractor() {
 		let node = path.node;
 		if (node.body) {
 			if (hasValidJSXEntryNode(node.body)) {
-				addComponent('ArrowFunctionExpression', print(cast(node.body, node)), declarations);
+				addComponent('ArrowFunctionExpression', print(cast(node.body, node)));
 			} else if (node.body.body && node.body.body.length) {
 				let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
 				if (result.length) {
 					const arg = result[0].argument;
 					if (hasValidJSXEntryNode(arg)) {
-						addComponent('ArrowFunctionExpression', print(cast(arg, result[0])), declarations);
+						addComponent('ArrowFunctionExpression', print(cast(arg, result[0])));
 					}
         		}
 			}
@@ -400,7 +424,7 @@ function jsxComponentExtractor() {
 		  if (result.length) {
 			const arg = result[0].argument;
 			if (hasValidJSXEntryNode(arg)) {
-				addComponent(node.key.name, print(cast(arg, result[0])), declarations);
+				addComponent(node.key.name, print(cast(arg, result[0])));
 			}
 		  }
 		}
@@ -409,7 +433,7 @@ function jsxComponentExtractor() {
 		let node = path.node;
 		if (node.key.name && node.value) {
 			if (hasValidJSXEntryNode(node.value)) {
-				addComponent(node.key.name, print(cast(node.value, node)), declarations);
+				addComponent(node.key.name, print(cast(node.value, node)));
 			}
 		}
 	}
@@ -422,5 +446,13 @@ export function extractJSXComponents(jsxInput) {
     parserOpts: { isTSX: true }
   });
   traverse(ast, jsxComponentExtractor());
+
+  Object.keys(extractedComponents).forEach((componentName)=>{
+	const declarated = addDeclarations(extractedComponents[componentName], declarations);
+	if (extractedComponents[componentName] !== declarated) {
+		extractedComponents[componentName + '_declarated'] = declarated;
+	}
+  });
+
   return extractedComponents;
 }

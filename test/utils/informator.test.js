@@ -218,7 +218,8 @@ it('can handle basic string declarations', () => {
 	  }
 	`;
 	assert(extractJSXComponents(input), {
-		App: "<h1>{{this.greeting}}</h1>"
+		App: "<h1>{{this.greeting}}</h1>",
+		App_declarated:  "{{#let (hash greeting=\"Hi\") as |ctx|}}<h1>{{ctx.greeting}}</h1>{{/let}}"
 	});
 });
 it('can handle basic numeric declarations', () => {
@@ -231,7 +232,8 @@ it('can handle basic numeric declarations', () => {
 	  }
 	`;
 	assert(extractJSXComponents(input), {
-		App: "<h1>{{this.greeting}}</h1>"
+		App: "<h1>{{this.greeting}}</h1>",
+		App_declarated:  "{{#let (hash greeting=42) as |ctx|}}<h1>{{ctx.greeting}}</h1>{{/let}}"
 	});
 });
 it('can handle spread as arguments for arrow function', () => {
@@ -279,7 +281,7 @@ it('can handle components with state hook', () => {
 	`;
 	// idea todo -> we can catch setGreeting and produce {{action (mut this.greeting)}}, or kinda
 	assert(extractJSXComponents(input), {
-		ArrowFunctionExpression: "<div><h1>{{this.greeting}}</h1><input type=\"text\" value={{this.greeting}} {{on \"change\" this.handleChange}} /></div>"
+		ArrowFunctionExpression: "<div><h1>{{this.greeting}}</h1><input type=\"text\" value={{this.greeting}} {{on \"change\" this.handleChange}} /></div>",
 	});
 });
 function assert(left, right) {
