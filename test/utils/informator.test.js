@@ -208,7 +208,73 @@ it('can extract component from object property', () => {
 		name: "<div></div>"
 	});
 });
-
+it('can handle basic string declarations', () => {
+	// todo fix fails
+	const input = `
+	function App() {
+		const greeting = "Hi";
+	  
+		return <h1>{greeting}</h1>;
+	  }
+	`;
+	assert(extractJSXComponents(input), {
+		App: "<h1>{{this.greeting}}</h1>"
+	});
+});
+it('can handle basic numeric declarations', () => {
+	// todo fix fails
+	const input = `
+	function App() {
+		const greeting = 42;
+	  
+		return <h1>{greeting}</h1>;
+	  }
+	`;
+	assert(extractJSXComponents(input), {
+		App: "<h1>{{this.greeting}}</h1>"
+	});
+});
+it('can handle spread as arguments for arrow function', () => {
+	const input = `
+	const Headline = ({ value }) => {
+		return <h1>{value}</h1>;
+	  };
+	`;
+	assert(extractJSXComponents(input), {
+		ArrowFunctionExpression: "<h1>{{this.value}}</h1>"
+	});
+	// App.. = <h1>{{@value}}</h1>
+});
+it('can handle spread as arguments for named function', () => {
+	const input = `
+	function Headline({ value }) {
+		return <h1>{value}</h1>;
+	  };
+	`;
+	assert(extractJSXComponents(input), {
+		Headline: "<h1>{{this.value}}</h1>"
+	});
+	// App.. = <h1>{{@value}}</h1>
+});
+it('can handle components with state hook', () => {
+	const input = `
+	const Headline = () => {
+		const [greeting, setGreeting] = useState(
+		  'Hello Function Component!'
+		);
+	  
+		const handleChange = event => setGreeting(event.target.value);
+	  
+		return (
+		  <div><h1>{greeting}</h1><input type="text" value={greeting} onChange={handleChange} /></div>
+		);
+	  };
+	`;
+	// idea todo -> we can catch setGreeting and produce {{action (mut this.greeting)}}, or kinda
+	assert(extractJSXComponents(input), {
+		ArrowFunctionExpression: "<div><h1>{{this.greeting}}</h1><input type=\"text\" value={{this.greeting}} {{on \"change\" this.handleChange}} /></div>"
+	});
+});
 function assert(left, right) {
   expect(left).toEqual(right);
 }

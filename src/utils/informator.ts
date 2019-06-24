@@ -296,58 +296,84 @@ function hasValidJSXEntryNode(item) {
 	return item && (item.type === 'JSXElement' || item.type === 'JSXFragment');
 }
 
-function addComponent(name, content) {
+function addDeclarations(content, declarations) {
+	let finalResult = content;
+	Object.keys(declarations).forEach((key)=>{
+		let value = declarations[key];
+		finalResult = finalResult.split('{{this.' + key + '}}').join(value);
+		finalResult = finalResult.split('this.' + key + ' ').join(value + ' ');
+	});
+	return finalResult;
+}
+
+function addComponent(name, content, valuesDeclatation) {
 	let uniqName = name;
 	if (name in extractedComponents) {
 		uniqName = uniqName + '_' + Math.random().toString(36).slice(-6);
 	}
 	extractedComponents[uniqName] = content;
+	const declarated = addDeclarations(content, valuesDeclatation);
+	if (content !== declarated) {
+		extractedComponents[uniqName + '_declarated'] = declarated;
+	}
 }
 
 function jsxComponentExtractor() {
   extractedComponents = {};
+  var declarations = {};
   return {
     FunctionDeclaration(path) {
       let node = path.node;
-      if (node.id && node.id.name && node.body && node.body.body.length) {
+      if (node.id && node.id.name && node.body && node.body.body && node.body.body.length) {
         let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
-			addComponent(node.id.name, print(cast(arg, result[0])));
+			addComponent(node.id.name, print(cast(arg, result[0])), declarations);
           }
         }
       }
 	},
     FunctionExpression(path) {
       let node = path.node;
-      if (node.body && node.body.body.length) {
+      if (node.body && node.body.body && node.body.body.length) {
         let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
-			addComponent('FunctionExpression', print(cast(arg, result[0])));
+			addComponent('FunctionExpression', print(cast(arg, result[0])), declarations);
           }
         }
       }
 	},
 	ClassMethod(path) {
 		let node = path.node;
-		if (node.key.name && node.body && node.body.body.length) {
+		if (node.key.name && node.body && node.body.body && node.body.body.length) {
 		  let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
 		  if (result.length) {
 			const arg = result[0].argument;
 			if (hasValidJSXEntryNode(arg)) {
-				addComponent(node.key.name, print(cast(arg, result[0])));
+				addComponent(node.key.name, print(cast(arg, result[0])), declarations);
 			}
 		  }
 		}
 	},
 	VariableDeclarator(path) {
 		let node = path.node;
+		if (node.id && node.id.type === 'Identifier') {
+			if (node.init) {
+				if (node.init.type === 'StringLiteral') {
+					declarations[node.id.name] =  node.init.value;
+				} else if (node.init.type === 'NumericLiteral') {
+					declarations[node.id.name] =  node.init.value;
+				} else if (node.init.type === 'BooleanLiteral') {
+					declarations[node.id.name] =  node.init.value;
+				}
+			}
+		}
 		if (node.id && node.id.name && node.init) {
 			if (hasValidJSXEntryNode(node.init)) {
-				addComponent(node.id.name, print(cast(node.init, node)));
+				addComponent(node.id.name, print(cast(node.init, node)), declarations);
 			}
 		}
 	},
@@ -355,13 +381,13 @@ function jsxComponentExtractor() {
 		let node = path.node;
 		if (node.body) {
 			if (hasValidJSXEntryNode(node.body)) {
-				addComponent('ArrowFunctionExpression', print(cast(node.body, node)));
-			} else if (node.body.body.length) {
+				addComponent('ArrowFunctionExpression', print(cast(node.body, node)), declarations);
+			} else if (node.body.body && node.body.body.length) {
 				let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
 				if (result.length) {
 					const arg = result[0].argument;
 					if (hasValidJSXEntryNode(arg)) {
-						addComponent('ArrowFunctionExpression', print(cast(arg, result[0])));
+						addComponent('ArrowFunctionExpression', print(cast(arg, result[0])), declarations);
 					}
         		}
 			}
@@ -369,12 +395,12 @@ function jsxComponentExtractor() {
 	},
 	ObjectMethod(path) {
 		let node = path.node;
-		if (node.key.name && node.body && node.body.body.length) {
+		if (node.key.name && node.body && node.body.body && node.body.body.length) {
 		  let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
 		  if (result.length) {
 			const arg = result[0].argument;
 			if (hasValidJSXEntryNode(arg)) {
-				addComponent(node.key.name, print(cast(arg, result[0])));
+				addComponent(node.key.name, print(cast(arg, result[0])), declarations);
 			}
 		  }
 		}
@@ -383,7 +409,7 @@ function jsxComponentExtractor() {
 		let node = path.node;
 		if (node.key.name && node.value) {
 			if (hasValidJSXEntryNode(node.value)) {
-				addComponent(node.key.name, print(cast(node.value, node)));
+				addComponent(node.key.name, print(cast(node.value, node)), declarations);
 			}
 		}
 	}
