@@ -288,7 +288,14 @@ it("support yelding components context deep access", () => {
   const input = `(<MyComponent as={foo}>{foo.name}</MyComponent>);`;
   assert(toHBS(input), '<MyComponent as |foo|>{{foo.name}}</MyComponent>');
 });
-
+it("support complex yield", () => {
+  const input = `(<div>{yield(name, {foo:1})}</div>);`;
+  assert(toHBS(input), '<div>{{yield name (hash foo=1)}}</div>');
+});
+it("support basic", () => {
+  const input = `(<div>{yield()}</div>);`;
+  assert(toHBS(input), '<div>{{yield}}</div>');
+});
 
 it("can return components map from pure functions input", () => {
   const input = `

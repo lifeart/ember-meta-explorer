@@ -342,7 +342,7 @@ const casters = {
   ObjectExpression(node, parent) {
     return {
       type:
-        parent.type === "ObjectProperty" || parent.type === "ArrayExpression" || parent.type === "SequenceExpression"
+        parent.type === "ObjectProperty" || parent.type === "ArrayExpression" || parent.type === "SequenceExpression" || parent.type === "CallExpression"
           ? "SubExpression"
           : "MustacheStatement",
       params: [],
