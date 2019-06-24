@@ -616,3 +616,14 @@ const casters = {
     return newNode;
   }
 };
+
+// in case of astexplorer.net debug, copy whole code and uncomment lines after this msg
+// export default function () {
+//   return {
+//     visitor: {
+//       JSXElement(path) {
+//         console.log(cast(path.node));
+//       }
+//     }
+//   };
+// }
