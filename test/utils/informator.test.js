@@ -282,6 +282,7 @@ it('can handle components with state hook', () => {
 	// idea todo -> we can catch setGreeting and produce {{action (mut this.greeting)}}, or kinda
 	assert(extractJSXComponents(input), {
 		ArrowFunctionExpression: "<div><h1>{{this.greeting}}</h1><input type=\"text\" value={{this.greeting}} {{on \"change\" this.handleChange}} /></div>",
+		ArrowFunctionExpression_declarated: "{{#let (hash greeting=\"Hello Function Component!\") as |ctx|}}<div><h1>{{ctx.greeting}}</h1><input type=\"text\" value={{ctx.greeting}} {{on \"change\" this.handleChange}} /></div>{{/let}}"
 	});
 });
 function assert(left, right) {
