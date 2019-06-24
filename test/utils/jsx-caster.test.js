@@ -280,6 +280,15 @@ it("support modifier having multiple arguments", () => {
   const input = '(<MyComponent mod-style={[1],2,"3",foo,{ color: "green"}} />);';
   assert(toHBS(input), '<MyComponent {{style (array 1) 2 "3" this.foo (hash color="green")}}></MyComponent>');
 });
+it("support yelding components context", () => {
+  const input = `(<MyComponent as={foo,bar,baz}>{foo}</MyComponent>);`;
+  assert(toHBS(input), '<MyComponent as |foo bar baz|>{{foo}}</MyComponent>');
+});
+it("support yelding components context deep access", () => {
+  const input = `(<MyComponent as={foo}>{foo.name}</MyComponent>);`;
+  assert(toHBS(input), '<MyComponent as |foo|>{{foo.name}}</MyComponent>');
+});
+
 
 it("can return components map from pure functions input", () => {
   const input = `

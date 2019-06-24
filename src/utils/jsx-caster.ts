@@ -651,6 +651,20 @@ const casters = {
     };
 
     head.attributes.forEach(attr => {
+      if (attr.name.name === 'as' && attr.name.type === 'JSXIdentifier') {
+        if (attr.value.type === "JSXExpressionContainer") {
+          if (attr.value.expression.type === "SequenceExpression") {
+            attr.value.expression.expressions.forEach((exp) =>{
+              if (exp.type === "Identifier") {
+                newNode.blockParams.push(exp.name);
+              }
+            });
+          } else if (attr.value.expression.type === "Identifier") {
+            newNode.blockParams.push(attr.value.expression.name);
+          }
+          return;
+        }
+      }
       let maybeAttr = cast(attr, head);
       if (maybeAttr.type !== "ElementModifierStatement") {
         newNode.attributes.push(maybeAttr);
@@ -658,7 +672,9 @@ const casters = {
         newNode.modifiers.push(maybeAttr);
       }
     });
-    newNode.children = node.children.map(el => cast(el));
+    increaseScope(newNode.blockParams);
+    newNode.children = node.children.map(el => cast(el, node));
+    decreaseScope(newNode.blockParams);
 
     if (parent && parent.type === "ReturnStatement") {
       return {
