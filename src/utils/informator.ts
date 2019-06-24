@@ -303,17 +303,21 @@ function addDeclarations(content, declarations) {
 	let contextName = 'ctx';
 	Object.keys(declarations).forEach((key)=>{
 		let value = declarations[key];
-		finalResult = finalResult.split('this.' + key).join(`${contextName}.${key}`);
-		if (typeof value === 'string') {
-			hashes.push(`${key}="${value}"`);
-		} else if (typeof value === 'number') {
-			hashes.push(`${key}=${value}`);
-		} else if (typeof value === 'boolean') {
-			hashes.push(`${key}=${value}`);
+		if (key.startsWith('this.')) {
+			finalResult = finalResult.split(key).join(value);
+		} else {
+			finalResult = finalResult.split('this.' + key).join(`${contextName}.${key}`);
+			if (typeof value === 'string') {
+				hashes.push(`${key}="${value}"`);
+			} else if (typeof value === 'number') {
+				hashes.push(`${key}=${value}`);
+			} else if (typeof value === 'boolean') {
+				hashes.push(`${key}=${value}`);
+			}
 		}
 	});
 	if (hashes.length === 0) {
-		return content;
+		return finalResult;
 	}
 	let output = `{{#let (hash ${hashes.join(' ')}) as |ctx|}}${finalResult}{{/let}}`;
 	return output;
@@ -394,6 +398,20 @@ function jsxComponentExtractor() {
 					});
 				}
 			}
+		} else if (node.id && node.id.type === 'ObjectPattern') {
+			if (node.init && node.init.type === 'MemberExpression') {
+				if (node.init.object.type === 'ThisExpression') {
+					if (node.init.property.type === 'Identifier') {
+						if (node.init.property.name === 'props') {
+							node.id.properties.forEach((prop)=>{
+								if (prop.key.type === 'Identifier') {
+									declarations['this.' + prop.key.name] = '@' + prop.key.name;
+								}
+							});
+						}
+					}
+				}
+			}
 		}
 		if (node.id && node.id.name && node.init) {
 			if (hasValidJSXEntryNode(node.init)) {
@@ -403,6 +421,16 @@ function jsxComponentExtractor() {
 	},
 	ArrowFunctionExpression(path) {
 		let node = path.node;
+
+		if (node.params && node.params.length === 1  && node.params[0].type === 'ObjectPattern') {
+			node.params[0].properties.forEach((prop)=>{
+				if (prop.type === 'ObjectProperty') {
+					if (prop.key.type === 'Identifier') {
+						declarations['this.' + prop.key.name] = '@' + prop.key.name;
+					}
+				}
+			});
+		}
 		if (node.body) {
 			if (hasValidJSXEntryNode(node.body)) {
 				addComponent('ArrowFunctionExpression', print(cast(node.body, node)));

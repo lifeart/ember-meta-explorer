@@ -243,7 +243,8 @@ it('can handle spread as arguments for arrow function', () => {
 	  };
 	`;
 	assert(extractJSXComponents(input), {
-		ArrowFunctionExpression: "<h1>{{this.value}}</h1>"
+		ArrowFunctionExpression: "<h1>{{this.value}}</h1>",
+		ArrowFunctionExpression_declarated: "<h1>{{@value}}</h1>",
 	});
 	// App.. = <h1>{{@value}}</h1>
 });
@@ -264,6 +265,18 @@ it('can handle spread as arguments for named function', () => {
     //return (
 	//	<p>Hello, {name}</p>
 	//  );
+});
+it('can handle spread for this.props', () => {
+	const input = `
+	function Headline() {
+		const { value } = this.props;
+		return <h1>{value}</h1>;
+	  };
+	`;
+	assert(extractJSXComponents(input), {
+		Headline: "<h1>{{this.value}}</h1>",
+		Headline_declarated: "<h1>{{@value}}</h1>"
+	});
 });
 it('can handle components with state hook', () => {
 	const input = `
