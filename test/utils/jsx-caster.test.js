@@ -173,11 +173,8 @@ it("can handle tricky math cases", () => {
 });
 
 it("can handle increment case", () => {
-    const input = `(<span>{i++}</span>);`;
-    assert(
-      toHBS(input),
-      "<span>{{inc this.i}}</span>"
-    );
+  const input = `(<span>{i++}</span>);`;
+  assert(toHBS(input), "<span>{{inc this.i}}</span>");
 });
 
 it("support nullable rendering cases", () => {
@@ -194,74 +191,88 @@ it("can add modifiers for dom event handing", () => {
 });
 
 it("can convert dom attributes to normal names", () => {
-    const input = `(<form tabIndex="42"></form>);`;
-    assert(toHBS(input), '<form tabindex="42"></form>');
+  const input = `(<form tabIndex="42"></form>);`;
+  assert(toHBS(input), '<form tabindex="42"></form>');
 });
 
 it("support yield", () => {
-    const input = `(<form>{this.props.children}</form>);`;
-    assert(toHBS(input), '<form>{{yield}}</form>');
+  const input = `(<form>{this.props.children}</form>);`;
+  assert(toHBS(input), "<form>{{yield}}</form>");
 });
 
 it("support hashes", () => {
-    const input = `(<MyComponent data={{name: 1, label: "d", key: false, value: record}} />);`;
-    assert(toHBS(input), '<MyComponent @data={{hash name=1 label="d" key=false value=this.record}}></MyComponent>');
+  const input = `(<MyComponent data={{name: 1, label: "d", key: false, value: record}} />);`;
+  assert(
+    toHBS(input),
+    '<MyComponent @data={{hash name=1 label="d" key=false value=this.record}}></MyComponent>'
+  );
 });
 
 it("support hashes as subparams", () => {
-    const input = `(<MyComponent data={{name: { value: 42 }}} />);`;
-    assert(toHBS(input), '<MyComponent @data={{hash name=(hash value=42)}}></MyComponent>');
+  const input = `(<MyComponent data={{name: { value: 42 }}} />);`;
+  assert(
+    toHBS(input),
+    "<MyComponent @data={{hash name=(hash value=42)}}></MyComponent>"
+  );
 });
 
 it("support strings as hash keys", () => {
   const input = `(<MyComponent data={{["my-prop"]: 12}} />);`;
-  assert(toHBS(input), '<MyComponent @data={{hash my-prop=12}}></MyComponent>');
+  assert(toHBS(input), "<MyComponent @data={{hash my-prop=12}}></MyComponent>");
 });
 
 it("support basic arrays", () => {
-    const input = `(<MyComponent data={[1,"2",false,{ foo: 1 }]} />);`;
-    assert(toHBS(input), '<MyComponent @data={{array 1 "2" false (hash foo=1)}}></MyComponent>');
+  const input = `(<MyComponent data={[1,"2",false,{ foo: 1 }]} />);`;
+  assert(
+    toHBS(input),
+    '<MyComponent @data={{array 1 "2" false (hash foo=1)}}></MyComponent>'
+  );
 });
 
 it("support nested arrays", () => {
-    const input = `(<MyComponent data={[1,"2",[3, true],{ foo: [ 42, "11" ] }]} />);`;
-    assert(toHBS(input), '<MyComponent @data={{array 1 "2" (array 3 true) (hash foo=(array 42 "11"))}}></MyComponent>');
+  const input = `(<MyComponent data={[1,"2",[3, true],{ foo: [ 42, "11" ] }]} />);`;
+  assert(
+    toHBS(input),
+    '<MyComponent @data={{array 1 "2" (array 3 true) (hash foo=(array 42 "11"))}}></MyComponent>'
+  );
 });
 
 it("support template strings using concat", () => {
-    const input = '(<MyComponent name={`foo${bar}1`} />);';
-    assert(toHBS(input), '<MyComponent @name={{concat "foo" this.bar "1"}}></MyComponent>');
+  const input = "(<MyComponent name={`foo${bar}1`} />);";
+  assert(
+    toHBS(input),
+    '<MyComponent @name={{concat "foo" this.bar "1"}}></MyComponent>'
+  );
 });
 
-it("support string concatination", ()=>{
-    const input = '(<MyComponent name={"3" + 2} />);';
-    assert(toHBS(input), '<MyComponent @name={{concat "3" 2}}></MyComponent>');
+it("support string concatination", () => {
+  const input = '(<MyComponent name={"3" + 2} />);';
+  assert(toHBS(input), '<MyComponent @name={{concat "3" 2}}></MyComponent>');
 });
 
-it('support angle components attrs', ()=>{
+it("support angle components attrs", () => {
   const input = '(<MyComponent attr-name="2" prop="42" />);';
   assert(toHBS(input), '<MyComponent name="2" @prop="42"></MyComponent>');
 });
 
-it('support data-attrs components', ()=>{
+it("support data-attrs components", () => {
   const input = '(<MyComponent data-name="foo" />);';
   assert(toHBS(input), '<MyComponent data-name="foo"></MyComponent>');
 });
 
-it('support action', ()=>{
+it("support action", () => {
   const input = '(<MyComponent name={action("foo")} />);';
   assert(toHBS(input), '<MyComponent @name={{action "foo"}}></MyComponent>');
 });
 
-
 it("support this refs", () => {
-  const input = '(<div>{log(this)}</div>);';
-  assert(toHBS(input), '<div>{{log this}}</div>');
+  const input = "(<div>{log(this)}</div>);";
+  assert(toHBS(input), "<div>{{log this}}</div>");
 });
 
 it("support ...attributes", () => {
-  const input = '(<div attributes></div>);';
-  assert(toHBS(input), '<div ...attributes></div>');
+  const input = "(<div attributes></div>);";
+  assert(toHBS(input), "<div ...attributes></div>");
 });
 
 it("support modifiers for DOM elements", () => {
@@ -270,33 +281,50 @@ it("support modifiers for DOM elements", () => {
 });
 it("support modifiers for Components elements", () => {
   const input = '(<MyComponent mod-style={{color: "face8d"}} />);';
-  assert(toHBS(input), '<MyComponent {{style (hash color="face8d")}}></MyComponent>');
+  assert(
+    toHBS(input),
+    '<MyComponent {{style (hash color="face8d")}}></MyComponent>'
+  );
 });
 it("support array as modifier argument", () => {
-  const input = '(<MyComponent mod-style={[1]} />);';
-  assert(toHBS(input), '<MyComponent {{style (array 1)}}></MyComponent>');
+  const input = "(<MyComponent mod-style={[1]} />);";
+  assert(toHBS(input), "<MyComponent {{style (array 1)}}></MyComponent>");
 });
 it("support modifier having multiple arguments", () => {
-  const input = '(<MyComponent mod-style={[1],2,"3",foo,{ color: "green"}} />);';
-  assert(toHBS(input), '<MyComponent {{style (array 1) 2 "3" this.foo (hash color="green")}}></MyComponent>');
+  const input =
+    '(<MyComponent mod-style={[1],2,"3",foo,{ color: "green"}} />);';
+  assert(
+    toHBS(input),
+    '<MyComponent {{style (array 1) 2 "3" this.foo (hash color="green")}}></MyComponent>'
+  );
 });
 it("support yelding components context", () => {
   const input = `(<MyComponent as={foo,bar,baz}>{foo}</MyComponent>);`;
-  assert(toHBS(input), '<MyComponent as |foo bar baz|>{{foo}}</MyComponent>');
+  assert(toHBS(input), "<MyComponent as |foo bar baz|>{{foo}}</MyComponent>");
 });
 it("support yelding components context deep access", () => {
   const input = `(<MyComponent as={foo}>{foo.name}</MyComponent>);`;
-  assert(toHBS(input), '<MyComponent as |foo|>{{foo.name}}</MyComponent>');
+  assert(toHBS(input), "<MyComponent as |foo|>{{foo.name}}</MyComponent>");
 });
 it("support complex yield", () => {
   const input = `(<div>{yield(name, {foo:1})}</div>);`;
-  assert(toHBS(input), '<div>{{yield name (hash foo=1)}}</div>');
+  assert(toHBS(input), "<div>{{yield name (hash foo=1)}}</div>");
 });
 it("support basic", () => {
   const input = `(<div>{yield()}</div>);`;
-  assert(toHBS(input), '<div>{{yield}}</div>');
+  assert(toHBS(input), "<div>{{yield}}</div>");
 });
-
+it("support basic types", () => {
+  const input = `
+  <div>{item.name}</div>
+  interface FooProp {
+    name: string;
+    X: number;
+    Y: number;
+  }
+  `;
+  assert(toHBS(input), "<div>{{this.item.name}}</div>");
+});
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {
