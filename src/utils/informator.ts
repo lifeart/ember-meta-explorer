@@ -292,6 +292,18 @@ export function extractComponentInformationFromMeta(meta: any) {
 
 var extractedComponents = {};
 
+function hasValidJSXEntryNode(item) {
+	return item && (item.type === 'JSXElement' || item.type === 'JSXFragment');
+}
+
+function addComponent(name, content) {
+	let uniqName = name;
+	if (name in extractedComponents) {
+		uniqName = uniqName + '_' + Math.random().toString(36).slice(-6);
+	}
+	extractedComponents[uniqName] = content;
+}
+
 function jsxComponentExtractor() {
   extractedComponents = {};
   return {
@@ -301,8 +313,8 @@ function jsxComponentExtractor() {
         let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
         if (result.length) {
           const arg = result[0].argument;
-          if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
-            extractedComponents[node.id.name] = print(cast(arg, result[0]));
+          if (hasValidJSXEntryNode(arg)) {
+			addComponent(node.id.name, print(cast(arg, result[0])));
           }
         }
       }
@@ -313,8 +325,8 @@ function jsxComponentExtractor() {
         let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
         if (result.length) {
           const arg = result[0].argument;
-          if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
-            extractedComponents['FunctionExpression'] = print(cast(arg, result[0]));
+          if (hasValidJSXEntryNode(arg)) {
+			addComponent('FunctionExpression', print(cast(arg, result[0])));
           }
         }
       }
@@ -325,8 +337,8 @@ function jsxComponentExtractor() {
 		  let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
 		  if (result.length) {
 			const arg = result[0].argument;
-			if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
-			  extractedComponents[node.key.name] = print(cast(arg, result[0]));
+			if (hasValidJSXEntryNode(arg)) {
+				addComponent(node.key.name, print(cast(arg, result[0])));
 			}
 		  }
 		}
@@ -334,22 +346,22 @@ function jsxComponentExtractor() {
 	VariableDeclarator(path) {
 		let node = path.node;
 		if (node.id && node.id.name && node.init) {
-			if (node.init.type === 'JSXElement' || node.init.type === 'JSXFragment') {
-				extractedComponents[node.key.name] = print(cast(node.init, node));
+			if (hasValidJSXEntryNode(node.init)) {
+				addComponent(node.key.name, print(cast(node.init, node)));
 			}
 		}
 	},
 	ArrowFunctionExpression(path) {
 		let node = path.node;
 		if (node.body) {
-			if (node.body.type === 'JSXElement' || node.body.type === 'JSXFragment') {
-				extractedComponents['ArrowFunctionExpression'] = print(cast(node.init, node));
+			if (hasValidJSXEntryNode(node.body)) {
+				addComponent('ArrowFunctionExpression', print(cast(node.init, node)));
 			} else if (node.body.body.length) {
 				let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
 				if (result.length) {
 					const arg = result[0].argument;
-					if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
-						extractedComponents['ArrowFunctionExpression'] = print(cast(arg, result[0]));
+					if (hasValidJSXEntryNode(arg)) {
+						addComponent('ArrowFunctionExpression', print(cast(arg, result[0])));
 					}
         		}
 			}
@@ -361,8 +373,8 @@ function jsxComponentExtractor() {
 		  let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
 		  if (result.length) {
 			const arg = result[0].argument;
-			if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
-			  extractedComponents[node.key.name] = print(cast(arg, result[0]));
+			if (hasValidJSXEntryNode(arg)) {
+				addComponent(node.key.name, print(cast(arg, result[0])));
 			}
 		  }
 		}
@@ -370,8 +382,8 @@ function jsxComponentExtractor() {
 	ObjectProperty(path) {
 		let node = path.node;
 		if (node.key.name && node.value) {
-			if (node.value.type === 'JSXElement' || node.value.type === 'JSXFragment') {
-				extractedComponents[node.key.name] = print(cast(node.value, node));
+			if (hasValidJSXEntryNode(node.value)) {
+				addComponent(node.key.name, print(cast(node.value, node)));
 			}
 		}
 	}
