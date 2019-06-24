@@ -254,7 +254,14 @@ it('can handle spread as arguments for named function', () => {
 	assert(extractJSXComponents(input), {
 		Headline: "<h1>{{this.value}}</h1>"
 	});
+
 	// App.. = <h1>{{@value}}</h1>
+
+	// same for
+	//  const { name } = this.props;
+    //return (
+	//	<p>Hello, {name}</p>
+	//  );
 });
 it('can handle components with state hook', () => {
 	const input = `
