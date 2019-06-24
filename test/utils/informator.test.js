@@ -164,7 +164,7 @@ node(function () {
 	`;
 
 	assert(extractJSXComponents(input), {
-		'FunctionExpression': '<h1>Hello from React</h1>'
+		'FunctionExpression': '<div></div>'
 	});
 });
 it("can extract jsx from ArrowFunctionExpression, using return", () => {

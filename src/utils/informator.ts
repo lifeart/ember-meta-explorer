@@ -347,7 +347,7 @@ function jsxComponentExtractor() {
 		let node = path.node;
 		if (node.id && node.id.name && node.init) {
 			if (hasValidJSXEntryNode(node.init)) {
-				addComponent(node.key.name, print(cast(node.init, node)));
+				addComponent(node.id.name, print(cast(node.init, node)));
 			}
 		}
 	},
@@ -355,7 +355,7 @@ function jsxComponentExtractor() {
 		let node = path.node;
 		if (node.body) {
 			if (hasValidJSXEntryNode(node.body)) {
-				addComponent('ArrowFunctionExpression', print(cast(node.init, node)));
+				addComponent('ArrowFunctionExpression', print(cast(node.body, node)));
 			} else if (node.body.body.length) {
 				let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
 				if (result.length) {
