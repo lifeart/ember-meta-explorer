@@ -233,6 +233,27 @@ it("support string concatination", ()=>{
     assert(toHBS(input), '<MyComponent @name={{concat "3" 2}}></MyComponent>');
 });
 
+it('support angle components attrs', ()=>{
+  const input = '(<MyComponent attr-name="2" prop="42" />);';
+  assert(toHBS(input), '<MyComponent name="2" @prop="42"></MyComponent>');
+});
+
+it('support data-attrs components', ()=>{
+  const input = '(<MyComponent data-name="foo" />);';
+  assert(toHBS(input), '<MyComponent data-name="foo"></MyComponent>');
+});
+
+it('support action', ()=>{
+  const input = '(<MyComponent name={action("foo")} />);';
+  assert(toHBS(input), '<MyComponent @name={{action "foo"}}></MyComponent>');
+});
+
+
+it("support this refs", () => {
+  const input = '(<div>{log(this)}</div>);';
+  assert(toHBS(input), '<div>{{log this}}</div>');
+});
+
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {

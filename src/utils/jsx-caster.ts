@@ -535,7 +535,14 @@ const casters = {
       parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
 
     if (isComponent) {
-      result.name = `@` + result.name;
+      if (result.name.startsWith('attr-')) {
+        result.name = result.name.replace('attr-', '');
+      } else if (result.name.startsWith('data-')) {
+
+      } else {
+        result.name = `@` + result.name;
+      }
+      
     } else {
       if (result.name === "className") {
         result.name = "class";
@@ -579,6 +586,16 @@ const casters = {
       }
     }
     return result;
+  },
+  ThisExpression(node, parent) {
+    return {
+      type: 'PathExpression',
+      original: "this",
+      this: true,
+      parts: [],
+      data: false,
+      loc: node.loc
+    }
   },
   JSXElement(node, parent) {
     const head = node.openingElement;
