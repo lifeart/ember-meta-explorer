@@ -17,7 +17,7 @@ function operatorToPath(operator, parent = null) {
     "<": "lt",
     ">=": "gte",
     "<=": "lte",
-    "/": "dev",
+    "/": "div",
     "%": "mod"
   };
 
