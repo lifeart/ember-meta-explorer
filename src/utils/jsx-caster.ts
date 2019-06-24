@@ -297,6 +297,11 @@ const casters = {
     };
   },
   Identifier(node, parent = null) {
+    if (parent && parent.type === 'ObjectProperty') {
+      if (parent.key === node) {
+        return node.name;
+      }
+    }
     let prefix =
       parent &&
       (parent.type === "PathExpression" || parent.type === "CallExpression")
@@ -349,7 +354,7 @@ const casters = {
         pairs: node.properties.map(prop => {
           return {
             type: "HashPair",
-            key: prop.key.name,
+            key: cast(prop.key, prop),
             value: cast(prop.value, prop),
             loc: prop.loc
           };
@@ -503,6 +508,11 @@ const casters = {
     return { type: "TextNode", chars: "", loc: node.loc };
   },
   StringLiteral(node, parent = null) {
+    if (parent && parent.type === 'ObjectProperty') {
+      if (parent.key === node) {
+        return node.value;
+      }
+    }
     if (
       parent &&
       (parent.type === "CallExpression" ||
@@ -663,7 +673,7 @@ const casters = {
   }
 };
 
-// in case of astexplorer.net debug, copy whole code and uncomment lines after this msg
+//in case of astexplorer.net debug, copy whole code and uncomment lines after this msg
 // export default function () {
 //   return {
 //     visitor: {

@@ -213,6 +213,11 @@ it("support hashes as subparams", () => {
     assert(toHBS(input), '<MyComponent @data={{hash name=(hash value=42)}}></MyComponent>');
 });
 
+it("support strings as hash keys", () => {
+  const input = `(<MyComponent data={{["my-prop"]: 12}} />);`;
+  assert(toHBS(input), '<MyComponent @data={{hash my-prop=12}}></MyComponent>');
+});
+
 it("support basic arrays", () => {
     const input = `(<MyComponent data={[1,"2",false,{ foo: 1 }]} />);`;
     assert(toHBS(input), '<MyComponent @data={{array 1 "2" false (hash foo=1)}}></MyComponent>');
