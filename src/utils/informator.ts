@@ -297,7 +297,7 @@ function jsxComponentExtractor() {
   return {
     FunctionDeclaration(path) {
       let node = path.node;
-      if (node.id.name && node.body && node.body.body.length) {
+      if (node.id && node.id.name && node.body && node.body.body.length) {
         let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
         if (result.length) {
           const arg = result[0].argument;
@@ -306,7 +306,75 @@ function jsxComponentExtractor() {
           }
         }
       }
-    }
+	},
+    FunctionExpression(path) {
+      let node = path.node;
+      if (node.body && node.body.body.length) {
+        let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
+        if (result.length) {
+          const arg = result[0].argument;
+          if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
+            extractedComponents['FunctionExpression'] = print(cast(arg, result[0]));
+          }
+        }
+      }
+	},
+	ClassMethod(path) {
+		let node = path.node;
+		if (node.key.name && node.body && node.body.body.length) {
+		  let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
+		  if (result.length) {
+			const arg = result[0].argument;
+			if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
+			  extractedComponents[node.key.name] = print(cast(arg, result[0]));
+			}
+		  }
+		}
+	},
+	VariableDeclarator(path) {
+		let node = path.node;
+		if (node.id && node.id.name && node.init) {
+			if (node.init.type === 'JSXElement' || node.init.type === 'JSXFragment') {
+				extractedComponents[node.key.name] = print(cast(node.init, node));
+			}
+		}
+	},
+	ArrowFunctionExpression(path) {
+		let node = path.node;
+		if (node.body) {
+			if (node.body.type === 'JSXElement' || node.body.type === 'JSXFragment') {
+				extractedComponents['ArrowFunctionExpression'] = print(cast(node.init, node));
+			} else if (node.body.body.length) {
+				let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
+				if (result.length) {
+					const arg = result[0].argument;
+					if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
+						extractedComponents['ArrowFunctionExpression'] = print(cast(arg, result[0]));
+					}
+        		}
+			}
+		}
+	},
+	ObjectMethod(path) {
+		let node = path.node;
+		if (node.key.name && node.body && node.body.body.length) {
+		  let result = node.body.body.filter((el)=>el.type === 'ReturnStatement');
+		  if (result.length) {
+			const arg = result[0].argument;
+			if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
+			  extractedComponents[node.key.name] = print(cast(arg, result[0]));
+			}
+		  }
+		}
+	},
+	ObjectProperty(path) {
+		let node = path.node;
+		if (node.key.name && node.value) {
+			if (node.value.type === 'JSXElement' || node.value.type === 'JSXFragment') {
+				extractedComponents[node.key.name] = print(cast(node.value, node));
+			}
+		}
+	}
   }
 }
 

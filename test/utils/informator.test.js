@@ -119,6 +119,64 @@ it("can extract simple JSX components from file", () => {
 	});
 });
 
+it("can extract jsx from ClassMethod", () => {
+	const input = `
+	import React from 'react';
+	import WithEmberSupport from 'ember-react-components';
+
+
+	export default class BasicComponent extends React.Component {
+		render() {
+			return <h1>Hello from React</h1>;
+		}
+	}
+	`;
+
+	assert(extractJSXComponents(input), {
+		'render': '<h1>Hello from React</h1>'
+	});
+});
+it("can extract jsx from VariableDeclarator", () => {
+	const input = `
+	var data = <h1>Hello from React</h1>;
+	`;
+
+	assert(extractJSXComponents(input), {
+		'data': '<h1>Hello from React</h1>'
+	});
+});
+it("can extract jsx from ArrowFunctionExpression", () => {
+	const input = `
+	var data = () => <h1>Hello from React</h1>;
+	`;
+
+	assert(extractJSXComponents(input), {
+		'ArrowFunctionExpression': '<h1>Hello from React</h1>'
+	});
+});
+it("can extract jsx from FunctionExpression", () => {
+	const input = `
+	function node() {}
+
+node(function () {
+	return <div></div>;
+});
+	`;
+
+	assert(extractJSXComponents(input), {
+		'FunctionExpression': '<h1>Hello from React</h1>'
+	});
+});
+it("can extract jsx from ArrowFunctionExpression, using return", () => {
+	const input = `
+	var data = () => { return <h1>Hello from React</h1> };
+	`;
+
+	assert(extractJSXComponents(input), {
+		'ArrowFunctionExpression': '<h1>Hello from React</h1>'
+	});
+});
+
 it('can extract component, returning fragment', () => {
 	const input = `function FragmentedComponent(props) {
 		return (<><div></div><div></div></>);
@@ -126,7 +184,30 @@ it('can extract component, returning fragment', () => {
 	assert(extractJSXComponents(input), {
 		FragmentedComponent: "<div></div><div></div>"
 	});
-})
+});
+
+it('can extract component from object method', () => {
+	const input = `
+	let ob = {
+		name() {
+			return <div></div>;
+		}
+	};
+	`;
+	assert(extractJSXComponents(input), {
+		name: "<div></div>"
+	});
+});
+it('can extract component from object property', () => {
+	const input = `
+	let ob = {
+		name:  <div></div>
+	};
+	`;
+	assert(extractJSXComponents(input), {
+		name: "<div></div>"
+	});
+});
 
 function assert(left, right) {
   expect(left).toEqual(right);
