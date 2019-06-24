@@ -544,7 +544,9 @@ const casters = {
       }
       
     } else {
-      if (result.name === "className") {
+      if (result.name === "attributes") {
+        result.name = "...attributes";
+      } else if (result.name === "className") {
         result.name = "class";
       } else if (
         result.name.startsWith("on") &&

@@ -254,6 +254,11 @@ it("support this refs", () => {
   assert(toHBS(input), '<div>{{log this}}</div>');
 });
 
+it("support ...attributes", () => {
+  const input = '(<div attributes></div>);';
+  assert(toHBS(input), '<div ...attributes></div>');
+});
+
 it("can return components map from pure functions input", () => {
   const input = `
      function SuccessMessage(props) {
