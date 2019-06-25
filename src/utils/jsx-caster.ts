@@ -1,6 +1,18 @@
 var scopedVariables = [];
 var declaredVariables = [];
 
+function bHash() {
+	return {
+		type: "Hash",
+		loc: null,
+		pairs: []
+	};
+}
+
+function hasTypes(item, types) {
+	return types.includes(item.type);
+}
+
 function operatorToPath(operator, parent = null) {
   const operationMap = {
     if: "if",
@@ -145,7 +157,7 @@ const casters = {
     if (hasComplexLeft || hasComplexRight) {
       let result = {
         type: "BlockStatement",
-        hash: { type: "Hash", pairs: [], loc: null },
+        hash: bHash(),
         path: operatorToPath("if"),
         loc: node.loc,
         params: [cast(node.test, node)],
@@ -183,7 +195,7 @@ const casters = {
 
     return {
       type: nodeType,
-      hash: { type: "Hash", pairs: [], loc: null },
+      hash: bHash(),
       loc: node.loc,
       path: operatorToPath("if"),
       params: [
@@ -198,7 +210,7 @@ const casters = {
   BinaryExpression(node) {
     return {
       type: "SubExpression",
-      hash: { type: "Hash", pairs: [], loc: null },
+      hash: bHash(),
       loc: node.loc,
       path: operatorToPath(node.operator, node),
       params: [cast(node.left, node), cast(node.right, node)]
@@ -210,7 +222,7 @@ const casters = {
         parent && parent.type === "JSXExpressionContainer"
           ? "MustacheStatement"
           : "SubExpression",
-      hash: { type: "Hash", pairs: [], loc: null },
+      hash: bHash(),
       loc: node.loc,
       path: operatorToPath(node.operator),
       params: [cast(node.argument, node)]
@@ -237,13 +249,12 @@ const casters = {
   CallExpression(node, parent) {
     if (
       parent &&
-      (parent.type === "BinaryExpression" ||
-        parent.type === "ConditionalExpression")
+      hasTypes(parent, ["BinaryExpression", "ConditionalExpression"])
     ) {
       increaseScope([node.callee.name]);
       let result = {
         type: "SubExpression",
-        hash: { type: "Hash", pairs: [], loc: null },
+        hash: bHash(),
         loc: node.loc,
         path: cast(node.callee, node),
         params: node.arguments.map(arg => cast(arg, node))
@@ -311,8 +322,7 @@ const casters = {
       }
     }
     let prefix =
-      parent &&
-      (parent.type === "PathExpression" || parent.type === "CallExpression")
+      parent && hasTypes(parent, ["PathExpression", "CallExpression"])
         ? ""
         : "this.";
     if (hasInScope(node.name)) {
@@ -349,8 +359,8 @@ const casters = {
   },
   ObjectExpression(node, parent) {
     return {
-      type:
-        parent.type === "ObjectProperty" || parent.type === "ArrayExpression" || parent.type === "SequenceExpression" || parent.type === "CallExpression"
+      type: 
+	  hasTypes(parent, ["ObjectProperty", "ArrayExpression", "SequenceExpression", "CallExpression"])
           ? "SubExpression"
           : "MustacheStatement",
       params: [],
@@ -380,18 +390,14 @@ const casters = {
   },
   ArrayExpression(node, parent) {
     return {
-      type:
-        parent.type === "ObjectProperty" || parent.type === "ArrayExpression" || parent.type === "SequenceExpression"
+	  type:
+	  hasTypes(parent, ["ObjectProperty", "ArrayExpression", "SequenceExpression", "CallExpression"])
           ? "SubExpression"
           : "MustacheStatement",
       params: node.elements.map(el => cast(el, node)),
       loc: node.loc,
       escaped: true,
-      hash: {
-        type: "Hash",
-        loc: null,
-        pairs: []
-      },
+      hash: bHash(),
       path: {
         type: "PathExpression",
         original: "array",
@@ -421,18 +427,14 @@ const casters = {
       }
     });
     return {
-      type:
-        parent.type === "ObjectProperty" || parent.type === "ArrayExpression"
+	  type:
+	  hasTypes(parent, ["ObjectProperty", "ArrayExpression"])
           ? "SubExpression"
           : "MustacheStatement",
       params: parts.map(item => cast(item, node)),
       loc: node.loc,
       escaped: true,
-      hash: {
-        type: "Hash",
-        loc: null,
-        pairs: []
-      },
+      hash: bHash(),
       path: {
         type: "PathExpression",
         original: "concat",
@@ -444,22 +446,19 @@ const casters = {
     };
   },
   JSXExpressionContainer(node, parent) {
-    const expression = node.expression;
-    if (node.expression.type === "SequenceExpression") {
-      return cast(expression, node);
-    } else if (node.expression.type === "TemplateLiteral") {
-      return cast(expression, node);
-    } else if (node.expression.type === "ArrayExpression") {
-      return cast(expression, node);
-    } else if (node.expression.type === "ObjectExpression") {
-      return cast(expression, node);
-    } else if (node.expression.type === "JSXEmptyExpression") {
-      return cast(expression, node);
-    } else if (node.expression.type === "UpdateExpression") {
-      return cast(expression, node);
-    } else if (node.expression.type === "ConditionalExpression") {
-      return cast(expression, node);
-    } else if (node.expression.type === "LogicalExpression") {
+	const expression = node.expression;
+	
+	if (hasTypes(expression, [
+		"SequenceExpression",
+		"TemplateLiteral",
+		"ArrayExpression",
+		"ObjectExpression",
+		"JSXEmptyExpression",
+		"UpdateExpression",
+		"ConditionalExpression"
+	])) {
+		return cast(expression, node);
+	} else if (node.expression.type === "LogicalExpression") {
       return {
         type: "BlockStatement",
         path: operatorToPath(
@@ -468,7 +467,7 @@ const casters = {
         params: [cast(expression.left, expression)],
         loc: expression.loc,
         inverse: null,
-        hash: { type: "Hash", pairs: [], loc: null },
+        hash: bHash(),
         program: cast(expression.right, expression)
       };
     }
@@ -478,7 +477,7 @@ const casters = {
       escaped: true,
       path: null,
       params: [],
-      hash: { type: "Hash", pairs: [], loc: null }
+      hash: bHash()
     };
     if (expression.type === "CallExpression") {
       if (
@@ -491,7 +490,7 @@ const casters = {
           params: [cleanupBlockParam(cast(expression, node))],
           loc: expression.loc,
           inverse: null,
-          hash: { type: "Hash", pairs: [], loc: null },
+          hash: bHash(),
           program: cast(expression.arguments[0], expression)
         };
       } else {
@@ -522,14 +521,15 @@ const casters = {
       }
     }
     if (
-      parent &&
-      (parent.type === "CallExpression" ||
-        parent.type === "BinaryExpression" ||
-        parent.type === "ConditionalExpression" ||
-        parent.type === "ObjectProperty" ||
-        parent.type === "SequenceExpression" ||
-        parent.type === "ArrayExpression")
-    ) {
+      parent && hasTypes(parent, [
+		"CallExpression",
+		"BinaryExpression",
+		"ConditionalExpression",
+		"ObjectProperty",
+		"SequenceExpression",
+		"ArrayExpression",
+	]))
+     {
       return {
         type: "StringLiteral",
         value: node.value,
@@ -574,7 +574,7 @@ const casters = {
           loc: null
         },
         params: Array.isArray(result.value) ? result.value : [result.value],
-        hash: { type: "Hash", pairs: [], loc: null },
+        hash: bHash(),
         loc: node.loc
       };
     }
@@ -611,7 +611,7 @@ const casters = {
             },
             result.value.path
           ],
-          hash: { type: "Hash", pairs: [], loc: null },
+          hash: bHash(),
           loc: node.loc
         };
       } else {
