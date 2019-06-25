@@ -245,7 +245,7 @@ export function extractJSXComponents(jsxInput) {
     parserOpts: { isTSX: true }
   });
   traverse(ast, jsxComponentExtractor());
-  const declarationScope = getDeclarationScope();
+  //const declarationScope = getDeclarationScope();
   Object.keys(extractedComponents).forEach(componentName => {
     const declarated = addDeclarations(
       extractedComponents[componentName],
