@@ -310,9 +310,17 @@ it("support complex yield", () => {
   const input = `(<div>{yield(name, {foo:1})}</div>);`;
   assert(toHBS(input), "<div>{{yield name (hash foo=1)}}</div>");
 });
-it("support basic", () => {
+it("support basic yield", () => {
   const input = `(<div>{yield()}</div>);`;
   assert(toHBS(input), "<div>{{yield}}</div>");
+});
+it("support basic props mapping with array fn", () => {
+  const input = `(<ul>{props.todos.map(todo => <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />)}</ul>);`;
+  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}}></TodoItem>{{/each}}</ul>");
+});
+it("support basic props mapping with array fn as return", () => {
+  const input = `(<ul>{this.props.todos.map(todo => { return <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />})}</ul>);`;
+  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}}></TodoItem>{{/each}}</ul>");
 });
 it("support basic types", () => {
   const input = `

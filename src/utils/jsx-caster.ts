@@ -58,13 +58,17 @@ function operatorToPath(operator, parent = null) {
 function cleanupBlockParam(node) {
   let parts = node.parts;
   parts.pop();
-  node.original = ["this", ...parts].join(".");
+  if (node.original.startsWith('@')) {
+	node.original = "@" + [...parts].join(".");
+  } else {
+	node.original = ["this", ...parts].join(".");
+  }
   node.parts = parts;
   return node;
 }
 
 function pathExpressionFromParam(node) {
-  if (node.original.startsWith("this.") && node.original.endsWith(".map")) {
+  if (node.original.endsWith(".map")) {
     return {
       type: "PathExpression",
       original: "each",
@@ -290,11 +294,14 @@ const casters = {
     let isExternal =
       original.startsWith("this.props.") || original.startsWith("props.");
     if (isExternal) {
-      items.shift();
-      original = original.replace("this.", "").replace("props.", "@");
+		// if (items[0] !== "props") {
+			items.shift();
+		// }
+	  original = original.replace("this.", "").replace("props.", "");
+	  original = "@" + original;
       if (original === "@children") {
         original = "yield";
-      }
+	  }
     }
 
     if (original.startsWith("this.Math.")) {
@@ -444,6 +451,12 @@ const casters = {
         loc: null
       }
     };
+  },
+  BlockStatement(node, parent) {
+	let returns = node.body.filter((el)=>el.type === 'ReturnStatement');
+	if (returns.length) {
+		return cast(returns[0].argument, returns[0]);
+	}
   },
   JSXExpressionContainer(node, parent) {
 	const expression = node.expression;
