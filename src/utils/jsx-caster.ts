@@ -249,6 +249,20 @@ const casters = {
     decreaseScope(blockParams);
     return result;
   },
+  FunctionExpression(node) {
+    let blockParams = node.params.map(param => {
+      return castToString(param, node);
+    });
+    increaseScope(blockParams);
+    let result = {
+      type: "Block",
+      blockParams: blockParams,
+      body: [cast(node.body, node)],
+      loc: null
+    };
+    decreaseScope(blockParams);
+    return result;
+  },
 
   CallExpression(node, parent) {
     if (
@@ -495,7 +509,7 @@ const casters = {
     if (expression.type === "CallExpression") {
       if (
         expression.arguments.length &&
-        expression.arguments[0].type === "ArrowFunctionExpression"
+        (hasTypes(expression.arguments[0], ["ArrowFunctionExpression", "FunctionExpression"]))
       ) {
         return {
           type: "BlockStatement",

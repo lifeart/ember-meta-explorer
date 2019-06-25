@@ -322,6 +322,10 @@ it("support basic props mapping with array fn as return", () => {
   const input = `(<ul>{this.props.todos.map(todo => { return <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />})}</ul>);`;
   assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}}></TodoItem>{{/each}}</ul>");
 });
+it("support basic props mapping with true fn", () => {
+  const input = `(<ul>{this.props.todos.map(function(todo){ return <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />})}</ul>);`;
+  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}}></TodoItem>{{/each}}</ul>");
+});
 it("support basic types", () => {
   const input = `
   <div>{item.name}</div>
