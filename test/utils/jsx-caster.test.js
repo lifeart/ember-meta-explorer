@@ -379,3 +379,26 @@ function toHBS(input) {
 function assert(left, right) {
   expect(left).toEqual(right);
 }
+
+
+// do we need support this case?
+// function MyComponent({name}) {
+// 	let localName = "idea";
+// 	let localAge = 12;
+//  let external = name;
+// 	let isEnabled = true;
+// 	let localList = [1,"2",true,{name: 1}];
+// 	return (<div>{name} {localName} {localAge} {isEnabled} {localList} {external}</div>);
+// }
+
+// {{let (hash 
+// 	localName = "idea"
+// 	localAge = 12
+// 	isEnabled = true
+//  external = @name
+// 	localList = (array 1 "2" true (hash name = 1))
+// ) as |ctx|}}
+
+// 	<div>{{@name}} {{ctx.localName}} {{ctx.localAge}} {{ctx.isEnabled}} {{ctx.localList}} {{ctx.name}}</div>
+
+// {{/let}}
