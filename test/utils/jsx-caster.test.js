@@ -76,7 +76,7 @@ it("can handle complex conditions", () => {
       );`;
   assert(
     toHBS(input),
-    "<div>{{#if this.isLoggedIn}}<LogoutButton @onClick={{this.handleLogoutClick}}></LogoutButton>{{else}}<LoginButton @onClick={{this.handleLoginClick}}></LoginButton>{{/if}}</div>"
+    "<div>{{#if this.isLoggedIn}}<LogoutButton @onClick={{this.handleLogoutClick}} />{{else}}<LoginButton @onClick={{this.handleLoginClick}} />{{/if}}</div>"
   );
 });
 
@@ -86,7 +86,7 @@ it("can handle complex conditions with fragments", () => {
       );`;
   assert(
     toHBS(input),
-    "<div>{{#if this.isLoggedIn}}<LogoutButton></LogoutButton><LogoutButton></LogoutButton>{{else}}<LogoutButton></LogoutButton><LogoutButton></LogoutButton>{{/if}}</div>"
+    "<div>{{#if this.isLoggedIn}}<LogoutButton /><LogoutButton />{{else}}<LogoutButton /><LogoutButton />{{/if}}</div>"
   );
 });
 
@@ -94,13 +94,13 @@ it("can assign component props", () => {
   const input = `(<LogoutButton onClick={this.onClick} />);`;
   assert(
     toHBS(input),
-    "<LogoutButton @onClick={{this.onClick}}></LogoutButton>"
+    "<LogoutButton @onClick={{this.onClick}} />"
   );
 });
 
 it("keep dom attrs", () => {
   const input = `(<src onClick={this.onClick} />);`;
-  assert(toHBS(input), '<src {{on "click" this.onClick}}></src>');
+  assert(toHBS(input), '<src {{on "click" this.onClick}} />');
 });
 
 it("can handle basic this.props values", () => {
@@ -117,28 +117,28 @@ it("can handle props in simple expressions", () => {
   const input = `(<h1>Hello, {props.name ? <Login /> : <Logout /> }</h1>);`;
   assert(
     toHBS(input),
-    "<h1>Hello, {{#if @name}}<Login></Login>{{else}}<Logout></Logout>{{/if}}</h1>"
+    "<h1>Hello, {{#if @name}}<Login />{{else}}<Logout />{{/if}}</h1>"
   );
 });
 
 it("can handle props as component args", () => {
   const input = `(<MyComponent name={this.props.name} />);`;
-  assert(toHBS(input), "<MyComponent @name={{@name}}></MyComponent>");
+  assert(toHBS(input), "<MyComponent @name={{@name}} />");
 });
 
 it("can handle boolean component arguments", () => {
   const input = `(<MyComponent name={false} />);`;
-  assert(toHBS(input), "<MyComponent @name={{false}}></MyComponent>");
+  assert(toHBS(input), "<MyComponent @name={{false}} />");
 });
 
 it("can handle string component arguments", () => {
   const input = `(<MyComponent name={"false"} />);`;
-  assert(toHBS(input), '<MyComponent @name="false"></MyComponent>');
+  assert(toHBS(input), '<MyComponent @name="false" />');
 });
 
 it("can handle numeric component arguments", () => {
   const input = `(<MyComponent name={42} />);`;
-  assert(toHBS(input), "<MyComponent @name={{42}}></MyComponent>");
+  assert(toHBS(input), "<MyComponent @name={{42}} />");
 });
 
 it("can transform className on html tags", () => {
@@ -181,7 +181,7 @@ it("support nullable rendering cases", () => {
   const input = `(<div>{this.state.isDangerAlertShowed ? <DangerAlert text={'Danger'} /> : null}</div>);`;
   assert(
     toHBS(input),
-    '<div>{{#if this.state.isDangerAlertShowed}}<DangerAlert @text="Danger"></DangerAlert>{{/if}}</div>'
+    '<div>{{#if this.state.isDangerAlertShowed}}<DangerAlert @text="Danger" />{{/if}}</div>'
   );
 });
 
@@ -204,7 +204,7 @@ it("support hashes", () => {
   const input = `(<MyComponent data={{name: 1, label: "d", key: false, value: record}} />);`;
   assert(
     toHBS(input),
-    '<MyComponent @data={{hash name=1 label="d" key=false value=this.record}}></MyComponent>'
+    '<MyComponent @data={{hash name=1 label="d" key=false value=this.record}} />'
   );
 });
 
@@ -212,20 +212,20 @@ it("support hashes as subparams", () => {
   const input = `(<MyComponent data={{name: { value: 42 }}} />);`;
   assert(
     toHBS(input),
-    "<MyComponent @data={{hash name=(hash value=42)}}></MyComponent>"
+    "<MyComponent @data={{hash name=(hash value=42)}} />"
   );
 });
 
 it("support strings as hash keys", () => {
   const input = `(<MyComponent data={{["my-prop"]: 12}} />);`;
-  assert(toHBS(input), "<MyComponent @data={{hash my-prop=12}}></MyComponent>");
+  assert(toHBS(input), "<MyComponent @data={{hash my-prop=12}} />");
 });
 
 it("support basic arrays", () => {
   const input = `(<MyComponent data={[1,"2",false,{ foo: 1 }]} />);`;
   assert(
     toHBS(input),
-    '<MyComponent @data={{array 1 "2" false (hash foo=1)}}></MyComponent>'
+    '<MyComponent @data={{array 1 "2" false (hash foo=1)}} />'
   );
 });
 
@@ -233,7 +233,7 @@ it("support nested arrays", () => {
   const input = `(<MyComponent data={[1,"2",[3, true],{ foo: [ 42, "11" ] }]} />);`;
   assert(
     toHBS(input),
-    '<MyComponent @data={{array 1 "2" (array 3 true) (hash foo=(array 42 "11"))}}></MyComponent>'
+    '<MyComponent @data={{array 1 "2" (array 3 true) (hash foo=(array 42 "11"))}} />'
   );
 });
 
@@ -241,28 +241,28 @@ it("support template strings using concat", () => {
   const input = "(<MyComponent name={`foo${bar}1`} />);";
   assert(
     toHBS(input),
-    '<MyComponent @name={{concat "foo" this.bar "1"}}></MyComponent>'
+    '<MyComponent @name={{concat "foo" this.bar "1"}} />'
   );
 });
 
 it("support string concatination", () => {
   const input = '(<MyComponent name={"3" + 2} />);';
-  assert(toHBS(input), '<MyComponent @name={{concat "3" 2}}></MyComponent>');
+  assert(toHBS(input), '<MyComponent @name={{concat "3" 2}} />');
 });
 
 it("support angle components attrs", () => {
   const input = '(<MyComponent attr-name="2" prop="42" />);';
-  assert(toHBS(input), '<MyComponent name="2" @prop="42"></MyComponent>');
+  assert(toHBS(input), '<MyComponent name="2" @prop="42" />');
 });
 
 it("support data-attrs components", () => {
   const input = '(<MyComponent data-name="foo" />);';
-  assert(toHBS(input), '<MyComponent data-name="foo"></MyComponent>');
+  assert(toHBS(input), '<MyComponent data-name="foo" />');
 });
 
 it("support action", () => {
   const input = '(<MyComponent name={action("foo")} />);';
-  assert(toHBS(input), '<MyComponent @name={{action "foo"}}></MyComponent>');
+  assert(toHBS(input), '<MyComponent @name={{action "foo"}} />');
 });
 
 it("support this refs", () => {
@@ -283,19 +283,19 @@ it("support modifiers for Components elements", () => {
   const input = '(<MyComponent mod-style={{color: "face8d"}} />);';
   assert(
     toHBS(input),
-    '<MyComponent {{style (hash color="face8d")}}></MyComponent>'
+    '<MyComponent {{style (hash color="face8d")}} />'
   );
 });
 it("support array as modifier argument", () => {
   const input = "(<MyComponent mod-style={[1]} />);";
-  assert(toHBS(input), "<MyComponent {{style (array 1)}}></MyComponent>");
+  assert(toHBS(input), "<MyComponent {{style (array 1)}} />");
 });
 it("support modifier having multiple arguments", () => {
   const input =
     '(<MyComponent mod-style={[1],2,"3",foo,{ color: "green"}} />);';
   assert(
     toHBS(input),
-    '<MyComponent {{style (array 1) 2 "3" this.foo (hash color="green")}}></MyComponent>'
+    '<MyComponent {{style (array 1) 2 "3" this.foo (hash color="green")}} />'
   );
 });
 it("support yelding components context", () => {
@@ -316,19 +316,19 @@ it("support basic yield", () => {
 });
 it("support basic props mapping with array fn", () => {
   const input = `(<ul>{props.todos.map(todo => <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />)}</ul>);`;
-  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}}></TodoItem>{{/each}}</ul>");
+  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>");
 });
 it("support basic props mapping with array fn as return", () => {
   const input = `(<ul>{this.props.todos.map(todo => { return <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />})}</ul>);`;
-  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}}></TodoItem>{{/each}}</ul>");
+  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>");
 });
 it("support basic props mapping with true fn", () => {
   const input = `(<ul>{this.props.todos.map(function(todo){ return <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />})}</ul>);`;
-  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}}></TodoItem>{{/each}}</ul>");
+  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>");
 });
 it("support basic props mapping with true fn and multiple returns", () => {
   const input = `(<ul>{this.props.todos.map(function(todo){ return <><TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} /><div></div></>})}</ul>);`;
-  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}}></TodoItem><div></div>{{/each}}</ul>");
+  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} /><div></div>{{/each}}</ul>");
 });
 it("support basic types", () => {
   const input = `

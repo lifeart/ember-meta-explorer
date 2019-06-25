@@ -724,6 +724,14 @@ const casters = {
   }
 };
 
+export function cleanDeclarationScope() {
+	declaredVariables = [];
+}
+
+export function getDeclarationScope() {
+	return declaredVariables.slice(0);
+}
+
 //in case of astexplorer.net debug, copy whole code and uncomment lines after this msg
 // export default function () {
 //   return {
