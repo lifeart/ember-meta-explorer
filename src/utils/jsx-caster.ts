@@ -1,4 +1,5 @@
 var scopedVariables = [];
+var declaredVariables = [];
 
 function operatorToPath(operator, parent = null) {
   const operationMap = {
@@ -263,6 +264,13 @@ const casters = {
       loc: node.log
     };
     return result;
+  },
+  VariableDeclarator(node) {
+	if (node.id && node.id.type === "Identifier") {
+		let result = [node.id.name, cast(node.init, node)];
+		declaredVariables.push(result);
+		return result;
+	}
   },
   MemberExpression(node, parent) {
     let items = flattenMemberExpression(node);
