@@ -203,6 +203,13 @@ it("can handle plain jsx", () => {
   });
 });
 
+// it("can handle plain basic string declaration", () => {
+//   const input = `function name() { let item = "12"; return <div>{item}</div>}`;
+//   assert(extractJSXComponents(input), {
+//     root: "<div></div>"
+//   });
+// });
+
 it("can handle components with state hook", () => {
   const input = `
 	  const Headline = () => {
@@ -217,6 +224,7 @@ it("can handle components with state hook", () => {
 		  );
 		};
 	  `;
+	  
   // {{#let (hash greeting="hello") as |ctx|}}
   //   {{let (hash updateGreeting=(action (mut ctx.greeting) value="target.value")) as |act|}}
   //      <input {{on 'change' act.updateGreeting}}>

@@ -1,8 +1,7 @@
-const { print } = require("@glimmer/syntax");
+const { print, preprocess } = require("@glimmer/syntax");
 const { parseScriptFile } = require("./js-utils");
 const { cast, cleanDeclarationScope, getDeclarationScope } = require("./jsx-caster");
 import traverse from "@babel/traverse";
-
 
 var extractedComponents = {};
 var declarations = {};
@@ -72,6 +71,7 @@ function jsxComponentExtractor() {
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
+			cast(node);
             addComponent(node.id.name, print(cast(arg, result[0])));
           }
         }
@@ -106,15 +106,21 @@ function jsxComponentExtractor() {
         }
       }
     },
-    VariableDeclarator(path) {
-      let node = path.node;
+    VariableDeclarator(path, parent) {
+	  let node = path.node;
+	 
       if (node.id && node.id.type === "Identifier") {
+		
         if (node.init) {
+		
           if (node.init.type === "StringLiteral") {
+			cast(node, parent);
             declarations[node.id.name] = node.init.value;
           } else if (node.init.type === "NumericLiteral") {
+			cast(node, parent);
             declarations[node.id.name] = node.init.value;
           } else if (node.init.type === "BooleanLiteral") {
+			cast(node, parent);
             declarations[node.id.name] = node.init.value;
           }
         }
@@ -135,6 +141,7 @@ function jsxComponentExtractor() {
                       "BooleanLiteral"
                     ].includes(argType)
                   ) {
+					cast(node, parent);
                     declarations[el.name] = node.init.arguments[index].value;
                   }
                 }
@@ -149,6 +156,7 @@ function jsxComponentExtractor() {
               if (node.init.property.name === "props") {
                 node.id.properties.forEach(prop => {
                   if (prop.key.type === "Identifier") {
+					cast(node, parent);
                     declarations["this." + prop.key.name] = "@" + prop.key.name;
                   }
                 });
@@ -181,6 +189,7 @@ function jsxComponentExtractor() {
       }
       if (node.body) {
         if (hasValidJSXEntryNode(node.body)) {
+		  cast(node);
           addComponent("ArrowFunctionExpression", print(cast(node.body, node)));
         } else if (node.body.body && node.body.body.length) {
           let result = node.body.body.filter(
@@ -189,6 +198,7 @@ function jsxComponentExtractor() {
           if (result.length) {
             const arg = result[0].argument;
             if (hasValidJSXEntryNode(arg)) {
+			  cast(node);
               addComponent(
                 "ArrowFunctionExpression",
                 print(cast(arg, result[0]))
@@ -239,21 +249,141 @@ function jsxComponentExtractor() {
   };
 }
 
+var contextItems = {};
+
+function astPlugin(declarations) {
+	contextItems = {};
+	return function buildDeclarationPatcherPlugin() {
+		return {
+			visitor: {
+				PathExpression(node: any) {
+					let original = node.original;
+					let relatedDeclarations = declarations.filter(([name, value, type]) => {
+						return (original === name || original === 'this.' + name) && value !== undefined && type === "local";
+					});
+					if (relatedDeclarations.length) {
+						let dec = relatedDeclarations[0];
+						node.this = false;
+						node.data = false;
+						node.original = 'ctx.' + node.original.replace('this.', '');
+						contextItems[dec[0]] = dec[1];
+					} else {
+						let relatedDeclarations = declarations.filter(([name, , type]) => {
+							return (original === 'this.' + name) && type === "external";
+						});
+						if (relatedDeclarations.length) {
+							node.this = false;
+							node.data = true;
+							node.original = '@' + node.original.replace('this.', '');
+						}
+					}
+				return node;
+			  }
+			}
+		}
+	};
+}
+
+
 export function extractJSXComponents(jsxInput) {
   let ast = parseScriptFile(jsxInput, {
     filename: "dummy.tsx",
     parserOpts: { isTSX: true }
   });
   traverse(ast, jsxComponentExtractor());
-  //const declarationScope = getDeclarationScope();
+  const declarationScope = getDeclarationScope();
+//   console.log('declarationScope', JSON.stringify(declarationScope));
   Object.keys(extractedComponents).forEach(componentName => {
+	let template = extractedComponents[componentName];
+	let result =  preprocess(template, {
+		plugins: {
+		  ast: [astPlugin(declarationScope)]
+		}
+	  } as any);
+	//   console.log('declarationScope2', JSON.stringify(declarationScope));
+	//   console.log('contextItems2', JSON.stringify(contextItems));
+	let smartDeclaration = print(result);
+	let resolvedContext = Object.keys(contextItems);
+	if (resolvedContext.length) {
+		let pairs = [];
+		resolvedContext.forEach((el) =>{
+			pairs.push({
+				"type": "HashPair",
+				"key": el,
+				"value": contextItems[el],
+				"loc": null
+			  })
+		});
+		smartDeclaration = print({
+			"type": "Template",
+			"body": [
+			  {
+				"type": "BlockStatement",
+				"path": {
+				  "type": "PathExpression",
+				  "original": "let",
+				  "this": false,
+				  "parts": [
+					"let"
+				  ],
+				  "data": false,
+				  "loc": null
+				},
+				"params": [
+				  {
+					"type": "SubExpression",
+					"path": {
+					  "type": "PathExpression",
+					  "original": "hash",
+					  "this": false,
+					  "parts": [
+						"hash"
+					  ],
+					  "data": false,
+					  "loc": null
+					},
+					"params": [],
+					"hash": {
+					  "type": "Hash",
+					  "pairs": pairs,
+					  "loc": null
+					},
+					"loc": null
+				  }
+				],
+				"hash": {
+				  "type": "Hash",
+				  "pairs": [],
+				  "loc": null
+				},
+				"program": {
+				  "type": "Block",
+				  "body": result.body,
+				  "blockParams": [
+					"ctx"
+				  ],
+				  "loc": null
+				},
+				"inverse": null,
+				"loc": null
+			  }
+			],
+			"blockParams": [],
+			"loc": null
+		  });
+	}
     const declarated = addDeclarations(
       extractedComponents[componentName],
       declarations
     );
-    if (extractedComponents[componentName] !== declarated) {
-      extractedComponents[componentName + "_declarated"] = declarated;
-    }
+    // if (extractedComponents[componentName] !== declarated) {
+    //   extractedComponents[componentName + "_declarated"] = declarated;
+    // }
+    if (extractedComponents[componentName] !== smartDeclaration) {
+      extractedComponents[componentName + "_declarated"] = smartDeclaration;
+	}
+	
+	
   });
 
   return extractedComponents;

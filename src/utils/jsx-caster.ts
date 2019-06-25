@@ -233,6 +233,17 @@ const casters = {
     };
   },
   ArrowFunctionExpression(node) {
+	node.params.forEach((param) => {
+		if (param.type === "Identifier") {
+			let result = [param.name, undefined, "external"];
+			declaredVariables.push(result);
+		} else if (param.type === "ObjectPattern") {
+			param.properties.forEach((prop) => {
+				let result = [prop.key.name, undefined, "external"];
+				declaredVariables.push(result);
+			});
+		}
+	});
     let blockParams = node.params.map(param => {
       return castToString(param, node);
     });
@@ -296,7 +307,7 @@ const casters = {
   },
   VariableDeclarator(node) {
 	if (node.id && node.id.type === "Identifier") {
-		let result = [node.id.name, cast(node.init, node)];
+		let result = [node.id.name, JSON.parse(JSON.stringify(cast(node.init, node))), "local"];
 		declaredVariables.push(result);
 		return result;
 	}
@@ -381,7 +392,7 @@ const casters = {
   ObjectExpression(node, parent) {
     return {
       type: 
-	  hasTypes(parent, ["ObjectProperty", "ArrayExpression", "SequenceExpression", "CallExpression"])
+	  hasTypes(parent, ["ObjectProperty", "ArrayExpression", "SequenceExpression", "CallExpression", "VariableDeclarator"])
           ? "SubExpression"
           : "MustacheStatement",
       params: [],
@@ -541,6 +552,19 @@ const casters = {
   JSXEmptyExpression(node) {
     return { type: "TextNode", chars: "", loc: node.loc };
   },
+  FunctionDeclaration(node) {
+	node.params.forEach((param) => {
+		if (param.type === "Identifier") {
+			let result = [param.name, undefined, "external"];
+			declaredVariables.push(result);
+		} else if (param.type === "ObjectPattern") {
+			param.properties.forEach((prop) => {
+				let result = [prop.key.name, undefined, "external"];
+				declaredVariables.push(result);
+			});
+		}
+	});
+  },
   StringLiteral(node, parent = null) {
     if (parent && parent.type === 'ObjectProperty') {
       if (parent.key === node) {
@@ -555,6 +579,7 @@ const casters = {
 		"ObjectProperty",
 		"SequenceExpression",
 		"ArrayExpression",
+		"VariableDeclarator",
 	]))
      {
       return {
