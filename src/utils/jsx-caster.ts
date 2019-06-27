@@ -1,6 +1,28 @@
 var scopedVariables = [];
 var declaredVariables = [];
 
+function hasComplexIdentifier(id) {
+  // console.log('hasComplexIdentifier', JSON.stringify(id), JSON.stringify(declaredVariables));
+  if (!id) {
+    return false;
+  }
+  if (id.type === 'JSXElement') {
+    return true;
+  }
+  if (id.type === 'JSXFragment') {
+    return true;
+  }
+  if (id.type === "Identifier") {
+    let decs = declaredVariables.filter(([name, value])=>{
+      return name === id.name && value && (typeof value === "object" &&
+      (value.type === "Template" || value.type === "ElementNode"));
+    });
+    if (decs.length) {
+      return decs[0][1];
+    }
+  }
+}
+
 function bHash() {
   return {
     type: "Hash",
@@ -150,27 +172,6 @@ const casters = {
         ? "SubExpression"
         : "MustacheStatement";
 
-    const hasComplexIdentifier = (id) => {
-      // console.log('hasComplexIdentifier', JSON.stringify(id), JSON.stringify(declaredVariables));
-      if (!id) {
-        return false;
-      }
-      if (id.type === 'JSXElement') {
-        return true;
-      }
-      if (id.type === 'JSXFragment') {
-        return true;
-      }
-      if (id.type === "Identifier") {
-        let decs = declaredVariables.filter(([name, value])=>{
-          return name === id.name && value && (typeof value === "object" &&
-          (value.type === "Template" || value.type === "ElementNode"));
-        });
-        if (decs.length) {
-          return decs[0];
-        }
-      }
-    }
     let hasComplexLeft = hasComplexIdentifier(node.consequent);
     let hasComplexRight = hasComplexIdentifier(node.alternate);
     if (hasComplexLeft || hasComplexRight) {
@@ -203,11 +204,11 @@ const casters = {
       };
 
       if (hasComplexLeft && hasComplexLeft !== true) {
-        result.program.body = hasComplexLeft;
+        result.program.body = [hasComplexLeft];
       }
 
       if (hasComplexRight && hasComplexRight !== true) {
-        result.inverse.body = hasComplexRight;
+        result.inverse.body = [hasComplexRight];
       }
 
       if (
@@ -425,6 +426,12 @@ const casters = {
     };
   },
   Identifier(node, parent = null) {
+    if (parent && parent.type === "LogicalExpression" && parent.right === node) {
+      let id = hasComplexIdentifier(node);
+      if (id && id !== true) {
+        return id;
+      }
+    }
     if (parent && parent.type === "ObjectProperty") {
       if (parent.key === node) {
         return node.name;

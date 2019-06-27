@@ -337,6 +337,32 @@ it("can handle complexConditional templates", () => {
   });
 });
 
+it("can handle complexSingleConditional fragment templates", () => {
+  const input = `
+    function MyTemplate() {
+        let caseOne = <><div></div></>;
+        return <span>{ b && caseOne }</span>
+    }
+  `;
+  assert(extractJSXComponents(input), {
+    MyTemplate: "<span>{{#if this.b}}<div></div>{{/if}}</span>",
+    caseOne: "<div></div>"
+  });
+});
+
+it("can handle complexSingleConditionalItems templates", () => {
+  const input = `
+    function MyTemplate() {
+        let caseOne = <div></div>;
+        return <span>{ b && caseOne }</span>
+    }
+  `;
+  assert(extractJSXComponents(input), {
+    MyTemplate: "<span>{{#if this.b}}<div></div>{{/if}}</span>",
+    caseOne: "<div></div>"
+  });
+});
+
 // it("can handle plain basic string declaration", () => {
 //   const input = `function name() { let item = "12"; return <div>{item}</div>}`;
 //   assert(extractJSXComponents(input), {
