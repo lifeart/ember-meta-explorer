@@ -233,6 +233,17 @@ const casters = {
     };
   },
   ArrowFunctionExpression(node) {
+	node.params.forEach((param) => {
+		if (param.type === "Identifier") {
+			let result = [param.name, undefined, "external"];
+			declaredVariables.push(result);
+		} else if (param.type === "ObjectPattern") {
+			param.properties.forEach((prop) => {
+				let result = [prop.key.name, undefined, "external"];
+				declaredVariables.push(result);
+			});
+		}
+	});
     let blockParams = node.params.map(param => {
       return castToString(param, node);
     });
@@ -296,10 +307,49 @@ const casters = {
   },
   VariableDeclarator(node) {
 	if (node.id && node.id.type === "Identifier") {
-		let result = [node.id.name, cast(node.init, node)];
+		let result = [node.id.name, JSON.parse(JSON.stringify(cast(node.init, node))), "local"];
 		declaredVariables.push(result);
 		return result;
-	}
+	} else if (node.id && node.id.type === "ObjectPattern") {
+		if (node.init.type === "MemberExpression" && node.init.object.type === "ThisExpression" && node.init.property.type === "Identifier" ) {
+			if (node.init.property.name === "props" || node.init.property.name === "args") {
+				node.id.properties.forEach((prop)=>{
+					if (prop.key.type === "Identifier") {
+						let result = [prop.key.name, undefined, "external"];
+						declaredVariables.push(result);
+					}
+				});
+			}
+		}
+	} else if (node.id && node.id.type === "ArrayPattern") {
+        if (node.init && node.init.type === "CallExpression") {
+          if (
+            node.init.callee.type === "Identifier" &&
+            node.init.callee.name === "useState"
+          ) {
+
+            node.id.elements.forEach((el, index) => {
+              if (el.type === "Identifier") {
+                if (node.init.arguments[index]) {
+                  const argType = node.init.arguments[index].type;
+                  if (
+                    [
+                      "StringLiteral",
+                      "NumericLiteral",
+					  "BooleanLiteral",
+					  "ObjectExpression",
+					  "ArrayExpression"
+                    ].includes(argType)
+                  ) {
+					let result = [el.name, cast(node.init.arguments[index], node.init), "local"];
+					declaredVariables.push(result);
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
   },
   MemberExpression(node, parent) {
     let items = flattenMemberExpression(node);
@@ -381,7 +431,7 @@ const casters = {
   ObjectExpression(node, parent) {
     return {
       type: 
-	  hasTypes(parent, ["ObjectProperty", "ArrayExpression", "SequenceExpression", "CallExpression"])
+	  hasTypes(parent, ["ObjectProperty", "ArrayExpression", "SequenceExpression", "CallExpression", "VariableDeclarator"])
           ? "SubExpression"
           : "MustacheStatement",
       params: [],
@@ -389,8 +439,9 @@ const casters = {
       escaped: true,
       hash: {
         type: "Hash",
-        loc: null,
-        pairs: node.properties.map(prop => {
+		loc: null,
+		// todo ObjectMethod support?
+        pairs: node.properties.filter((prop)=>prop.type === "ObjectProperty").map(prop=>{
           return {
             type: "HashPair",
             key: cast(prop.key, prop),
@@ -541,6 +592,19 @@ const casters = {
   JSXEmptyExpression(node) {
     return { type: "TextNode", chars: "", loc: node.loc };
   },
+  FunctionDeclaration(node) {
+	node.params.forEach((param) => {
+		if (param.type === "Identifier") {
+			let result = [param.name, undefined, "external"];
+			declaredVariables.push(result);
+		} else if (param.type === "ObjectPattern") {
+			param.properties.forEach((prop) => {
+				let result = [prop.key.name, undefined, "external"];
+				declaredVariables.push(result);
+			});
+		}
+	});
+  },
   StringLiteral(node, parent = null) {
     if (parent && parent.type === 'ObjectProperty') {
       if (parent.key === node) {
@@ -555,6 +619,7 @@ const casters = {
 		"ObjectProperty",
 		"SequenceExpression",
 		"ArrayExpression",
+		"VariableDeclarator",
 	]))
      {
       return {
