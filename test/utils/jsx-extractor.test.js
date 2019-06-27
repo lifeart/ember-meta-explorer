@@ -127,30 +127,48 @@ it("can handle basic string declarations", () => {
   // todo fix fails
   const input = `
 	  function App() {
-		  const greeting = "Hi";
+		  const greeting5 = "Hi";
 		
-		  return <h1>{greeting}</h1>;
+		  return <h1>{greeting5}</h1>;
 		}
 	  `;
   assert(extractJSXComponents(input), {
-    App: "<h1>{{this.greeting}}</h1>",
+    App: "<h1>{{this.greeting5}}</h1>",
     App_declarated:
-      '{{#let (hash greeting="Hi") as |ctx|}}<h1>{{ctx.greeting}}</h1>{{/let}}'
+      '{{#let (hash greeting5="Hi") as |ctx|}}<h1>{{ctx.greeting5}}</h1>{{/let}}'
   });
 });
 it("can handle basic numeric declarations", () => {
   // todo fix fails
   const input = `
 	  function App() {
-		  const greeting = 42;
+		  const greeting3 = 42;
 		
-		  return <h1>{greeting}</h1>;
+		  return <h1>{greeting3}</h1>;
 		}
 	  `;
   assert(extractJSXComponents(input), {
-    App: "<h1>{{this.greeting}}</h1>",
+    App: "<h1>{{this.greeting3}}</h1>",
     App_declarated:
-      "{{#let (hash greeting=42) as |ctx|}}<h1>{{ctx.greeting}}</h1>{{/let}}"
+      "{{#let (hash greeting3=42) as |ctx|}}<h1>{{ctx.greeting3}}</h1>{{/let}}"
+  });
+});
+it("can handle basic local declarations", () => {
+  // todo fix fails
+  const input = `
+	  function App() {
+		  const a = 42;
+		  let b = "1";
+		  var c = [1,false];
+		  var d = true;
+		  var e = { name : 12 };
+		  return <h1>{a}{b}{c}{d}{e} and { { aa: a, bb: b, cc: c, dd: d, ee: e} }</h1>;
+		}
+	  `;
+  assert(extractJSXComponents(input), {
+    App: "<h1>{{this.a}}{{this.b}}{{this.c}}{{this.d}}{{this.e}} and {{hash aa=this.a bb=this.b cc=this.c dd=this.d ee=this.e}}</h1>",
+    App_declarated:
+	"{{#let (hash a=42 b=\"1\" c={{array 1 false}} d=true e=(hash name=12)) as |ctx|}}<h1>{{ctx.a}}{{ctx.b}}{{ctx.c}}{{ctx.d}}{{ctx.e}} and {{hash aa=ctx.a bb=ctx.b cc=ctx.c dd=ctx.d ee=ctx.e}}</h1>{{/let}}"
   });
 });
 it("can handle spread as arguments for arrow function", () => {
@@ -172,7 +190,8 @@ it("can handle spread as arguments for named function", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    Headline: "<h1>{{this.value}}</h1>"
+    Headline: "<h1>{{this.value}}</h1>",
+    Headline_declarated: "<h1>{{@value}}</h1>"
   });
 
   // App.. = <h1>{{@value}}</h1>
@@ -213,14 +232,14 @@ it("can handle plain jsx", () => {
 it("can handle components with state hook", () => {
   const input = `
 	  const Headline = () => {
-		  const [greeting, setGreeting] = useState(
+		  const [greeting1, setGreeting] = useState(
 			'Hello Function Component!'
 		  );
 		
 		  const handleChange = event => setGreeting(event.target.value);
 		
 		  return (
-			<div><h1>{greeting}</h1><input type="text" value={greeting} onChange={handleChange} /></div>
+			<div><h1>{greeting1}</h1><input type="text" value={greeting1} onChange={handleChange} /></div>
 		  );
 		};
 	  `;
@@ -233,8 +252,52 @@ it("can handle components with state hook", () => {
   // idea todo -> we can catch setGreeting and produce {{action (mut this.greeting)}}, or kinda
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression:
-      '<div><h1>{{this.greeting}}</h1><input type="text" value={{this.greeting}} {{on "change" this.handleChange}} /></div>',
+      '<div><h1>{{this.greeting1}}</h1><input type="text" value={{this.greeting1}} {{on "change" this.handleChange}} /></div>',
     ArrowFunctionExpression_declarated:
-      '{{#let (hash greeting="Hello Function Component!") as |ctx|}}<div><h1>{{ctx.greeting}}</h1><input type="text" value={{ctx.greeting}} {{on "change" this.handleChange}} /></div>{{/let}}'
+      '{{#let (hash greeting1="Hello Function Component!") as |ctx|}}<div><h1>{{ctx.greeting1}}</h1><input type="text" value={{ctx.greeting1}} {{on "change" this.handleChange}} /></div>{{/let}}'
+  });
+});
+
+it("can handle components with simple object state hook", () => {
+  const input = `
+	  const Headline = () => {
+		  const [greeting12, setGreeting] = useState(
+			{ a: 1, b: "2", c: [1], d: false }
+		  );
+		
+		  const handleChange = event => setGreeting(event.target.value);
+		
+		  return (
+			<div><h1>{greeting12}</h1><input type="text" value={greeting12} onChange={handleChange} /></div>
+		  );
+		};
+	  `;
+	  
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression:
+	"<div><h1>{{this.greeting12}}</h1><input type=\"text\" value={{this.greeting12}} {{on \"change\" this.handleChange}} /></div>",
+    ArrowFunctionExpression_declarated:
+	"{{#let (hash greeting12=(hash a=1 b=\"2\" c=(array 1) d=false)) as |ctx|}}<div><h1>{{ctx.greeting12}}</h1><input type=\"text\" value={{ctx.greeting12}} {{on \"change\" this.handleChange}} /></div>{{/let}}"
+  });
+});
+
+it("can handle components with simple array state hook", () => {
+  const input = `
+	  const Headline = () => {
+		  const [greeting12, setGreeting] = useState(
+			[1,"2",false, { name : 1 }]
+		  );
+		
+		  return (
+			<h1>{greeting12}</h1>
+		  );
+		};
+	  `;
+	  
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression:
+	"<h1>{{this.greeting12}}</h1>",
+    ArrowFunctionExpression_declarated:
+	"{{#let (hash greeting12=(array 1 \"2\" false (hash name=1))) as |ctx|}}<h1>{{ctx.greeting12}}</h1>{{/let}}"
   });
 });

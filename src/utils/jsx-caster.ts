@@ -310,7 +310,46 @@ const casters = {
 		let result = [node.id.name, JSON.parse(JSON.stringify(cast(node.init, node))), "local"];
 		declaredVariables.push(result);
 		return result;
-	}
+	} else if (node.id && node.id.type === "ObjectPattern") {
+		if (node.init.type === "MemberExpression" && node.init.object.type === "ThisExpression" && node.init.property.type === "Identifier" ) {
+			if (node.init.property.name === "props" || node.init.property.name === "args") {
+				node.id.properties.forEach((prop)=>{
+					if (prop.key.type === "Identifier") {
+						let result = [prop.key.name, undefined, "external"];
+						declaredVariables.push(result);
+					}
+				});
+			}
+		}
+	} else if (node.id && node.id.type === "ArrayPattern") {
+        if (node.init && node.init.type === "CallExpression") {
+          if (
+            node.init.callee.type === "Identifier" &&
+            node.init.callee.name === "useState"
+          ) {
+
+            node.id.elements.forEach((el, index) => {
+              if (el.type === "Identifier") {
+                if (node.init.arguments[index]) {
+                  const argType = node.init.arguments[index].type;
+                  if (
+                    [
+                      "StringLiteral",
+                      "NumericLiteral",
+					  "BooleanLiteral",
+					  "ObjectExpression",
+					  "ArrayExpression"
+                    ].includes(argType)
+                  ) {
+					let result = [el.name, cast(node.init.arguments[index], node.init), "local"];
+					declaredVariables.push(result);
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
   },
   MemberExpression(node, parent) {
     let items = flattenMemberExpression(node);
@@ -400,8 +439,9 @@ const casters = {
       escaped: true,
       hash: {
         type: "Hash",
-        loc: null,
-        pairs: node.properties.map(prop => {
+		loc: null,
+		// todo ObjectMethod support?
+        pairs: node.properties.filter((prop)=>prop.type === "ObjectProperty").map(prop=>{
           return {
             type: "HashPair",
             key: cast(prop.key, prop),
