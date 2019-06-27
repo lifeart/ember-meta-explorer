@@ -215,6 +215,19 @@ it("can handle spread for this.props", () => {
   });
 });
 
+// it("can handle jsx subdeclarations", () => {
+// 	const input = `
+// 		function Headline() {
+// 			var tag = <div></div>;
+// 			return <h1>{tag}</h1>;
+// 		  };
+// 		`;
+// 	assert(extractJSXComponents(input), {
+// 	  Headline: "<h1>{{this.value}}</h1>",
+// 	  Headline_declarated: "<h1><div></div></h1>"
+// 	});
+//   });
+
 it("can handle plain jsx", () => {
   const input = `<div></div>`;
   assert(extractJSXComponents(input), {
