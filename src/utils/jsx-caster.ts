@@ -150,14 +150,29 @@ const casters = {
         ? "SubExpression"
         : "MustacheStatement";
 
-    let hasComplexLeft =
-      node.consequent &&
-      (node.consequent.type === "JSXElement" ||
-        node.consequent.type === "JSXFragment");
-    let hasComplexRight =
-      node.alternate &&
-      (node.alternate.type === "JSXElement" ||
-        node.alternate.type === "JSXFragment");
+    const hasComplexIdentifier = (id) => {
+      // console.log('hasComplexIdentifier', JSON.stringify(id), JSON.stringify(declaredVariables));
+      if (!id) {
+        return false;
+      }
+      if (id.type === 'JSXElement') {
+        return true;
+      }
+      if (id.type === 'JSXFragment') {
+        return true;
+      }
+      if (id.type === "Identifier") {
+        let decs = declaredVariables.filter(([name, value])=>{
+          return name === id.name && value && (typeof value === "object" &&
+          (value.type === "Template" || value.type === "ElementNode"));
+        });
+        if (decs.length) {
+          return decs[0];
+        }
+      }
+    }
+    let hasComplexLeft = hasComplexIdentifier(node.consequent);
+    let hasComplexRight = hasComplexIdentifier(node.alternate);
     if (hasComplexLeft || hasComplexRight) {
       let result = {
         type: "BlockStatement",
@@ -167,7 +182,7 @@ const casters = {
         params: [cast(node.test, node)],
         program: {
           type: "Block",
-          body:
+          body: 
             node.consequent.type === "JSXFragment"
               ? cast(node.consequent, node)
               : [cast(node.consequent, node)],
@@ -186,6 +201,14 @@ const casters = {
             }
           : null
       };
+
+      if (hasComplexLeft && hasComplexLeft !== true) {
+        result.program.body = hasComplexLeft;
+      }
+
+      if (hasComplexRight && hasComplexRight !== true) {
+        result.inverse.body = hasComplexRight;
+      }
 
       if (
         result.inverse &&
@@ -306,6 +329,7 @@ const casters = {
     return result;
   },
   VariableDeclarator(node) {
+    // console.log('VariableDeclarator', JSON.stringify(node));
     if (node.id && node.id.type === "Identifier") {
       let result = [
         node.id.name,

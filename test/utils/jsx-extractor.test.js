@@ -322,6 +322,21 @@ it("can handle plain jsx", () => {
   });
 });
 
+it("can handle complexConditional templates", () => {
+  const input = `
+    function MyTemplate() {
+        let caseOne = <><div></div></>;
+        let caseTwo = <h1></h1>;
+        return <span>{a > b ? caseOne : caseTwo }</span>
+    }
+  `;
+  assert(extractJSXComponents(input), {
+    MyTemplate: "<span>{{#if (gt this.a this.b)}}<div></div>{{else}}<h1></h1>{{/if}}</span>",
+    caseOne: "<div></div>",
+    caseTwo: "<h1></h1>"
+  });
+});
+
 // it("can handle plain basic string declaration", () => {
 //   const input = `function name() { let item = "12"; return <div>{item}</div>}`;
 //   assert(extractJSXComponents(input), {

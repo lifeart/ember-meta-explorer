@@ -50,10 +50,18 @@ function jsxComponentExtractor() {
         node.body.body &&
         node.body.body.length
       ) {
-        let result = node.body.body.filter(el => el.type === "ReturnStatement");
+        let result = node.body.body.filter(el => {
+          if (el.type === "VariableDeclaration") {
+            el.declarations.forEach((d)=>{
+              cast(d, el);
+            });
+          }
+          return el.type === "ReturnStatement";
+        });
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
+
             cast(node);
             addComponent(node.id.name, print(cast(arg, result[0])));
           }
