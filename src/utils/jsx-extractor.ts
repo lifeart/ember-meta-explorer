@@ -102,6 +102,8 @@ function jsxComponentExtractor() {
             cast(node, parent);
           } else if (
             node.init.type === "ObjectExpression" ||
+            node.init.type === "JSXElement" ||
+            node.init.type === "JSXFragment" ||
             node.init.type === "ArrayExpression"
           ) {
             cast(node, parent);
@@ -204,6 +206,21 @@ function astPlugin(declarations) {
   return function buildDeclarationPatcherPlugin() {
     return {
       visitor: {
+        MustacheStatement(node: any) {
+          let original = node.path.original;
+          let relatedElements = declarations.filter(([name, value, type]) => {
+            return (
+              (original === name || original === "this." + name) &&
+              (typeof value === "object" &&
+                (value.type === "Template" || value.type === "ElementNode")) &&
+              type === "local"
+            );
+          });
+          if (relatedElements.length) {
+            return relatedElements[0][1];
+          }
+          return node;
+        },
         PathExpression(node: any) {
           let original = node.original;
 
@@ -248,7 +265,7 @@ export function extractJSXComponents(jsxInput) {
   });
   traverse(ast, jsxComponentExtractor());
   const declarationScope = getDeclarationScope();
-  //   console.log('declarationScope', JSON.stringify(declarationScope));
+  // console.log('declarationScope', JSON.stringify(declarationScope));
   Object.keys(extractedComponents).forEach(componentName => {
     let template = extractedComponents[componentName];
     let result = preprocess(template, {
@@ -257,7 +274,7 @@ export function extractJSXComponents(jsxInput) {
       }
     } as any);
     //   console.log('declarationScope2', JSON.stringify(declarationScope));
-    //   console.log('contextItems2', JSON.stringify(contextItems));
+    // console.log('contextItems2', JSON.stringify(contextItems));
     let smartDeclaration = print(result);
     let resolvedContext = Object.keys(contextItems);
     if (resolvedContext.length) {

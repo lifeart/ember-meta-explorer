@@ -440,6 +440,14 @@ const casters = {
         loc: parent.loc
       };
     }
+    if (parent && parent.type === "VariableDeclarator") {
+       return {
+        type: "Template",
+        body: results,
+        blockParams: [],
+        loc: parent.loc
+      };
+    }
     return results;
   },
   ObjectExpression(node, parent) {

@@ -166,9 +166,10 @@ it("can handle basic local declarations", () => {
 		}
 	  `;
   assert(extractJSXComponents(input), {
-    App: "<h1>{{this.a}}{{this.b}}{{this.c}}{{this.d}}{{this.e}} and {{hash aa=this.a bb=this.b cc=this.c dd=this.d ee=this.e}}</h1>",
+    App:
+      "<h1>{{this.a}}{{this.b}}{{this.c}}{{this.d}}{{this.e}} and {{hash aa=this.a bb=this.b cc=this.c dd=this.d ee=this.e}}</h1>",
     App_declarated:
-	"{{#let (hash a=42 b=\"1\" c={{array 1 false}} d=true e=(hash name=12)) as |ctx|}}<h1>{{ctx.a}}{{ctx.b}}{{ctx.c}}{{ctx.d}}{{ctx.e}} and {{hash aa=ctx.a bb=ctx.b cc=ctx.c dd=ctx.d ee=ctx.e}}</h1>{{/let}}"
+      '{{#let (hash a=42 b="1" c={{array 1 false}} d=true e=(hash name=12)) as |ctx|}}<h1>{{ctx.a}}{{ctx.b}}{{ctx.c}}{{ctx.d}}{{ctx.e}} and {{hash aa=ctx.a bb=ctx.b cc=ctx.c dd=ctx.d ee=ctx.e}}</h1>{{/let}}'
   });
 });
 it("can handle spread as arguments for arrow function", () => {
@@ -215,18 +216,104 @@ it("can handle spread for this.props", () => {
   });
 });
 
-// it("can handle jsx subdeclarations", () => {
-// 	const input = `
-// 		function Headline() {
-// 			var tag = <div></div>;
-// 			return <h1>{tag}</h1>;
-// 		  };
-// 		`;
-// 	assert(extractJSXComponents(input), {
-// 	  Headline: "<h1>{{this.value}}</h1>",
-// 	  Headline_declarated: "<h1><div></div></h1>"
-// 	});
-//   });
+it("can handle jsx subdeclarations", () => {
+  const input = `
+		function Headline() {
+			var tag = <div></div>;
+			return <h1>{tag}</h1>;
+		  };
+		`;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.tag}}</h1>",
+    Headline_declarated: "<h1><div></div></h1>",
+    tag: "<div></div>"
+  });
+});
+
+it("can handle jsx subdeclarations in fragments", () => {
+  const input = `
+		function Headline() {
+			var tag = <><div></div></>;
+			return <h1>{tag}</h1>;
+		  };
+		`;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.tag}}</h1>",
+    Headline_declarated: "<h1><div></div></h1>",
+    tag: "<div></div>"
+  });
+});
+
+it("can handle jsx subdeclarations chains in fragments", () => {
+  const input = `
+		function Headline() {
+      var foo = <><h1>Hi</h1></>;
+			var tag = <><div>{foo}</div></>;
+			return <h1>{tag}</h1>;
+		  };
+		`;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.tag}}</h1>",
+    Headline_declarated: "<h1><div><h1>Hi</h1></div></h1>",
+    foo: "<h1>Hi</h1>",
+    tag: "<div>{{this.foo}}</div>",
+    tag_declarated: "<div><h1>Hi</h1></div>"
+  });
+});
+
+it("can handle jsx subdeclarations chains in pure nodes", () => {
+  const input = `
+		function Headline() {
+      var foo = <h1>Hi</h1>;
+			var tag = <div>{foo}</div>;
+			return <h1>{tag}</h1>;
+		  };
+		`;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.tag}}</h1>",
+    Headline_declarated: "<h1><div><h1>Hi</h1></div></h1>",
+    foo: "<h1>Hi</h1>",
+    tag: "<div>{{this.foo}}</div>",
+    tag_declarated: "<div><h1>Hi</h1></div>"
+  });
+});
+
+it("can handle jsx subdeclarations chains with params", () => {
+  const input = `
+		function Headline() {
+      let bar = 1;
+      var foo = <h1>{bar}</h1>;
+      let zoo = 12;
+			var tag = <div>{foo} {zoo}</div>;
+			return <h1>{tag}</h1>;
+		  };
+		`;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.tag}}</h1>",
+    Headline_declarated:
+      "{{#let (hash bar=1 zoo=12) as |ctx|}}<h1><div><h1>{{ctx.bar}}</h1> {{ctx.zoo}}</div></h1>{{/let}}",
+    foo: "<h1>{{this.bar}}</h1>",
+    foo_declarated:
+      "{{#let (hash bar=1) as |ctx|}}<h1>{{ctx.bar}}</h1>{{/let}}",
+    tag: "<div>{{this.foo}} {{this.zoo}}</div>",
+    tag_declarated:
+      "{{#let (hash zoo=12) as |ctx|}}<div><h1>{{ctx.bar}}</h1> {{ctx.zoo}}</div>{{/let}}"
+  });
+});
+
+it("can handle jsx subdeclarations and use it for filling", () => {
+  const input = `
+		function Headline() {
+			var tag = <div></div>;
+			return <h1>{tag}{tag}{tag}</h1>;
+		  };
+		`;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.tag}}{{this.tag}}{{this.tag}}</h1>",
+    Headline_declarated: "<h1><div></div><div></div><div></div></h1>",
+    tag: "<div></div>"
+  });
+});
 
 it("can handle plain jsx", () => {
   const input = `<div></div>`;
@@ -256,7 +343,7 @@ it("can handle components with state hook", () => {
 		  );
 		};
 	  `;
-	  
+
   // {{#let (hash greeting="hello") as |ctx|}}
   //   {{let (hash updateGreeting=(action (mut ctx.greeting) value="target.value")) as |act|}}
   //      <input {{on 'change' act.updateGreeting}}>
@@ -285,12 +372,12 @@ it("can handle components with simple object state hook", () => {
 		  );
 		};
 	  `;
-	  
+
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression:
-	"<div><h1>{{this.greeting12}}</h1><input type=\"text\" value={{this.greeting12}} {{on \"change\" this.handleChange}} /></div>",
+      '<div><h1>{{this.greeting12}}</h1><input type="text" value={{this.greeting12}} {{on "change" this.handleChange}} /></div>',
     ArrowFunctionExpression_declarated:
-	"{{#let (hash greeting12=(hash a=1 b=\"2\" c=(array 1) d=false)) as |ctx|}}<div><h1>{{ctx.greeting12}}</h1><input type=\"text\" value={{ctx.greeting12}} {{on \"change\" this.handleChange}} /></div>{{/let}}"
+      '{{#let (hash greeting12=(hash a=1 b="2" c=(array 1) d=false)) as |ctx|}}<div><h1>{{ctx.greeting12}}</h1><input type="text" value={{ctx.greeting12}} {{on "change" this.handleChange}} /></div>{{/let}}'
   });
 });
 
@@ -306,11 +393,10 @@ it("can handle components with simple array state hook", () => {
 		  );
 		};
 	  `;
-	  
+
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression:
-	"<h1>{{this.greeting12}}</h1>",
+    ArrowFunctionExpression: "<h1>{{this.greeting12}}</h1>",
     ArrowFunctionExpression_declarated:
-	"{{#let (hash greeting12=(array 1 \"2\" false (hash name=1))) as |ctx|}}<h1>{{ctx.greeting12}}</h1>{{/let}}"
+      '{{#let (hash greeting12=(array 1 "2" false (hash name=1))) as |ctx|}}<h1>{{ctx.greeting12}}</h1>{{/let}}'
   });
 });
