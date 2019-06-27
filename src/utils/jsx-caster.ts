@@ -2,15 +2,15 @@ var scopedVariables = [];
 var declaredVariables = [];
 
 function bHash() {
-	return {
-		type: "Hash",
-		loc: null,
-		pairs: []
-	};
+  return {
+    type: "Hash",
+    loc: null,
+    pairs: []
+  };
 }
 
 function hasTypes(item, types) {
-	return types.includes(item.type);
+  return types.includes(item.type);
 }
 
 function operatorToPath(operator, parent = null) {
@@ -58,10 +58,10 @@ function operatorToPath(operator, parent = null) {
 function cleanupBlockParam(node) {
   let parts = node.parts;
   parts.pop();
-  if (node.original.startsWith('@')) {
-	node.original = "@" + [...parts].join(".");
+  if (node.original.startsWith("@")) {
+    node.original = "@" + [...parts].join(".");
   } else {
-	node.original = ["this", ...parts].join(".");
+    node.original = ["this", ...parts].join(".");
   }
   node.parts = parts;
   return node;
@@ -233,17 +233,17 @@ const casters = {
     };
   },
   ArrowFunctionExpression(node) {
-	node.params.forEach((param) => {
-		if (param.type === "Identifier") {
-			let result = [param.name, undefined, "external"];
-			declaredVariables.push(result);
-		} else if (param.type === "ObjectPattern") {
-			param.properties.forEach((prop) => {
-				let result = [prop.key.name, undefined, "external"];
-				declaredVariables.push(result);
-			});
-		}
-	});
+    node.params.forEach(param => {
+      if (param.type === "Identifier") {
+        let result = [param.name, undefined, "external"];
+        declaredVariables.push(result);
+      } else if (param.type === "ObjectPattern") {
+        param.properties.forEach(prop => {
+          let result = [prop.key.name, undefined, "external"];
+          declaredVariables.push(result);
+        });
+      }
+    });
     let blockParams = node.params.map(param => {
       return castToString(param, node);
     });
@@ -306,50 +306,64 @@ const casters = {
     return result;
   },
   VariableDeclarator(node) {
-	if (node.id && node.id.type === "Identifier") {
-		let result = [node.id.name, JSON.parse(JSON.stringify(cast(node.init, node))), "local"];
-		declaredVariables.push(result);
-		return result;
-	} else if (node.id && node.id.type === "ObjectPattern") {
-		if (node.init.type === "MemberExpression" && node.init.object.type === "ThisExpression" && node.init.property.type === "Identifier" ) {
-			if (node.init.property.name === "props" || node.init.property.name === "args") {
-				node.id.properties.forEach((prop)=>{
-					if (prop.key.type === "Identifier") {
-						let result = [prop.key.name, undefined, "external"];
-						declaredVariables.push(result);
-					}
-				});
-			}
-		}
-	} else if (node.id && node.id.type === "ArrayPattern") {
-        if (node.init && node.init.type === "CallExpression") {
-          if (
-            node.init.callee.type === "Identifier" &&
-            node.init.callee.name === "useState"
-          ) {
-
-            node.id.elements.forEach((el, index) => {
-              if (el.type === "Identifier") {
-                if (node.init.arguments[index]) {
-                  const argType = node.init.arguments[index].type;
-                  if (
-                    [
-                      "StringLiteral",
-                      "NumericLiteral",
-					  "BooleanLiteral",
-					  "ObjectExpression",
-					  "ArrayExpression"
-                    ].includes(argType)
-                  ) {
-					let result = [el.name, cast(node.init.arguments[index], node.init), "local"];
-					declaredVariables.push(result);
-                  }
-                }
-              }
-            });
-          }
+    if (node.id && node.id.type === "Identifier") {
+      let result = [
+        node.id.name,
+        JSON.parse(JSON.stringify(cast(node.init, node))),
+        "local"
+      ];
+      declaredVariables.push(result);
+      return result;
+    } else if (node.id && node.id.type === "ObjectPattern") {
+      if (
+        node.init.type === "MemberExpression" &&
+        node.init.object.type === "ThisExpression" &&
+        node.init.property.type === "Identifier"
+      ) {
+        if (
+          node.init.property.name === "props" ||
+          node.init.property.name === "args"
+        ) {
+          node.id.properties.forEach(prop => {
+            if (prop.key.type === "Identifier") {
+              let result = [prop.key.name, undefined, "external"];
+              declaredVariables.push(result);
+            }
+          });
         }
       }
+    } else if (node.id && node.id.type === "ArrayPattern") {
+      if (node.init && node.init.type === "CallExpression") {
+        if (
+          node.init.callee.type === "Identifier" &&
+          node.init.callee.name === "useState"
+        ) {
+          node.id.elements.forEach((el, index) => {
+            if (el.type === "Identifier") {
+              if (node.init.arguments[index]) {
+                const argType = node.init.arguments[index].type;
+                if (
+                  [
+                    "StringLiteral",
+                    "NumericLiteral",
+                    "BooleanLiteral",
+                    "ObjectExpression",
+                    "ArrayExpression"
+                  ].includes(argType)
+                ) {
+                  let result = [
+                    el.name,
+                    cast(node.init.arguments[index], node.init),
+                    "local"
+                  ];
+                  declaredVariables.push(result);
+                }
+              }
+            }
+          });
+        }
+      }
+    }
   },
   MemberExpression(node, parent) {
     let items = flattenMemberExpression(node);
@@ -358,14 +372,14 @@ const casters = {
     let isExternal =
       original.startsWith("this.props.") || original.startsWith("props.");
     if (isExternal) {
-		// if (items[0] !== "props") {
-			items.shift();
-		// }
-	  original = original.replace("this.", "").replace("props.", "");
-	  original = "@" + original;
+      // if (items[0] !== "props") {
+      items.shift();
+      // }
+      original = original.replace("this.", "").replace("props.", "");
+      original = "@" + original;
       if (original === "@children") {
         original = "yield";
-	  }
+      }
     }
 
     if (original.startsWith("this.Math.")) {
@@ -387,7 +401,7 @@ const casters = {
     };
   },
   Identifier(node, parent = null) {
-    if (parent && parent.type === 'ObjectProperty') {
+    if (parent && parent.type === "ObjectProperty") {
       if (parent.key === node) {
         return node.name;
       }
@@ -430,25 +444,32 @@ const casters = {
   },
   ObjectExpression(node, parent) {
     return {
-      type: 
-	  hasTypes(parent, ["ObjectProperty", "ArrayExpression", "SequenceExpression", "CallExpression", "VariableDeclarator"])
-          ? "SubExpression"
-          : "MustacheStatement",
+      type: hasTypes(parent, [
+        "ObjectProperty",
+        "ArrayExpression",
+        "SequenceExpression",
+        "CallExpression",
+        "VariableDeclarator"
+      ])
+        ? "SubExpression"
+        : "MustacheStatement",
       params: [],
       loc: node.loc,
       escaped: true,
       hash: {
         type: "Hash",
-		loc: null,
-		// todo ObjectMethod support?
-        pairs: node.properties.filter((prop)=>prop.type === "ObjectProperty").map(prop=>{
-          return {
-            type: "HashPair",
-            key: cast(prop.key, prop),
-            value: cast(prop.value, prop),
-            loc: prop.loc
-          };
-        })
+        loc: null,
+        // todo ObjectMethod support?
+        pairs: node.properties
+          .filter(prop => prop.type === "ObjectProperty")
+          .map(prop => {
+            return {
+              type: "HashPair",
+              key: cast(prop.key, prop),
+              value: cast(prop.value, prop),
+              loc: prop.loc
+            };
+          })
       },
       path: {
         type: "PathExpression",
@@ -462,10 +483,14 @@ const casters = {
   },
   ArrayExpression(node, parent) {
     return {
-	  type:
-	  hasTypes(parent, ["ObjectProperty", "ArrayExpression", "SequenceExpression", "CallExpression"])
-          ? "SubExpression"
-          : "MustacheStatement",
+      type: hasTypes(parent, [
+        "ObjectProperty",
+        "ArrayExpression",
+        "SequenceExpression",
+        "CallExpression"
+      ])
+        ? "SubExpression"
+        : "MustacheStatement",
       params: node.elements.map(el => cast(el, node)),
       loc: node.loc,
       escaped: true,
@@ -499,10 +524,9 @@ const casters = {
       }
     });
     return {
-	  type:
-	  hasTypes(parent, ["ObjectProperty", "ArrayExpression"])
-          ? "SubExpression"
-          : "MustacheStatement",
+      type: hasTypes(parent, ["ObjectProperty", "ArrayExpression"])
+        ? "SubExpression"
+        : "MustacheStatement",
       params: parts.map(item => cast(item, node)),
       loc: node.loc,
       escaped: true,
@@ -518,25 +542,27 @@ const casters = {
     };
   },
   BlockStatement(node, parent) {
-	let returns = node.body.filter((el)=>el.type === 'ReturnStatement');
-	if (returns.length) {
-		return cast(returns[0].argument, returns[0]);
-	}
+    let returns = node.body.filter(el => el.type === "ReturnStatement");
+    if (returns.length) {
+      return cast(returns[0].argument, returns[0]);
+    }
   },
   JSXExpressionContainer(node, parent) {
-	const expression = node.expression;
-	
-	if (hasTypes(expression, [
-		"SequenceExpression",
-		"TemplateLiteral",
-		"ArrayExpression",
-		"ObjectExpression",
-		"JSXEmptyExpression",
-		"UpdateExpression",
-		"ConditionalExpression"
-	])) {
-		return cast(expression, node);
-	} else if (node.expression.type === "LogicalExpression") {
+    const expression = node.expression;
+
+    if (
+      hasTypes(expression, [
+        "SequenceExpression",
+        "TemplateLiteral",
+        "ArrayExpression",
+        "ObjectExpression",
+        "JSXEmptyExpression",
+        "UpdateExpression",
+        "ConditionalExpression"
+      ])
+    ) {
+      return cast(expression, node);
+    } else if (node.expression.type === "LogicalExpression") {
       return {
         type: "BlockStatement",
         path: operatorToPath(
@@ -560,7 +586,10 @@ const casters = {
     if (expression.type === "CallExpression") {
       if (
         expression.arguments.length &&
-        (hasTypes(expression.arguments[0], ["ArrowFunctionExpression", "FunctionExpression"]))
+        hasTypes(expression.arguments[0], [
+          "ArrowFunctionExpression",
+          "FunctionExpression"
+        ])
       ) {
         return {
           type: "BlockStatement",
@@ -579,7 +608,10 @@ const casters = {
       }
     } else if (expression.type === "BinaryExpression") {
       result.path = operatorToPath(expression.operator, expression);
-      result.params = [cast(expression.left, expression), cast(expression.right, expression)];
+      result.params = [
+        cast(expression.left, expression),
+        cast(expression.right, expression)
+      ];
     } else {
       result.params = [];
       result.path = cast(node.expression);
@@ -593,35 +625,36 @@ const casters = {
     return { type: "TextNode", chars: "", loc: node.loc };
   },
   FunctionDeclaration(node) {
-	node.params.forEach((param) => {
-		if (param.type === "Identifier") {
-			let result = [param.name, undefined, "external"];
-			declaredVariables.push(result);
-		} else if (param.type === "ObjectPattern") {
-			param.properties.forEach((prop) => {
-				let result = [prop.key.name, undefined, "external"];
-				declaredVariables.push(result);
-			});
-		}
-	});
+    node.params.forEach(param => {
+      if (param.type === "Identifier") {
+        let result = [param.name, undefined, "external"];
+        declaredVariables.push(result);
+      } else if (param.type === "ObjectPattern") {
+        param.properties.forEach(prop => {
+          let result = [prop.key.name, undefined, "external"];
+          declaredVariables.push(result);
+        });
+      }
+    });
   },
   StringLiteral(node, parent = null) {
-    if (parent && parent.type === 'ObjectProperty') {
+    if (parent && parent.type === "ObjectProperty") {
       if (parent.key === node) {
         return node.value;
       }
     }
     if (
-      parent && hasTypes(parent, [
-		"CallExpression",
-		"BinaryExpression",
-		"ConditionalExpression",
-		"ObjectProperty",
-		"SequenceExpression",
-		"ArrayExpression",
-		"VariableDeclarator",
-	]))
-     {
+      parent &&
+      hasTypes(parent, [
+        "CallExpression",
+        "BinaryExpression",
+        "ConditionalExpression",
+        "ObjectProperty",
+        "SequenceExpression",
+        "ArrayExpression",
+        "VariableDeclarator"
+      ])
+    ) {
       return {
         type: "StringLiteral",
         value: node.value,
@@ -636,7 +669,7 @@ const casters = {
     };
   },
   SequenceExpression(node, parent) {
-    return node.expressions.map((exp) => cast(exp, node));
+    return node.expressions.map(exp => cast(exp, node));
   },
   JSXAttribute(node, parent) {
     let result = {
@@ -650,10 +683,10 @@ const casters = {
       parent &&
       parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
 
-    if (result.name.startsWith('mod-')) {
-      let modName = result.name.replace('mod-', '');
-      if (result.value.type === 'MustacheStatement') {
-        result.value.type = 'SubExpression';
+    if (result.name.startsWith("mod-")) {
+      let modName = result.name.replace("mod-", "");
+      if (result.value.type === "MustacheStatement") {
+        result.value.type = "SubExpression";
       }
       return {
         type: "ElementModifierStatement",
@@ -672,14 +705,12 @@ const casters = {
     }
 
     if (isComponent) {
-      if (result.name.startsWith('attr-')) {
-        result.name = result.name.replace('attr-', '');
-      } else if (result.name.startsWith('data-')) {
-
+      if (result.name.startsWith("attr-")) {
+        result.name = result.name.replace("attr-", "");
+      } else if (result.name.startsWith("data-")) {
       } else {
         result.name = `@` + result.name;
       }
-      
     } else {
       if (result.name === "attributes") {
         result.name = "...attributes";
@@ -728,13 +759,13 @@ const casters = {
   },
   ThisExpression(node, parent) {
     return {
-      type: 'PathExpression',
+      type: "PathExpression",
       original: "this",
       this: true,
       parts: [],
       data: false,
       loc: node.loc
-    }
+    };
   },
   JSXElement(node, parent) {
     const head = node.openingElement;
@@ -751,10 +782,10 @@ const casters = {
     };
 
     head.attributes.forEach(attr => {
-      if (attr.name.name === 'as' && attr.name.type === 'JSXIdentifier') {
+      if (attr.name.name === "as" && attr.name.type === "JSXIdentifier") {
         if (attr.value.type === "JSXExpressionContainer") {
           if (attr.value.expression.type === "SequenceExpression") {
-            attr.value.expression.expressions.forEach((exp) =>{
+            attr.value.expression.expressions.forEach(exp => {
               if (exp.type === "Identifier") {
                 newNode.blockParams.push(exp.name);
               }
@@ -790,11 +821,11 @@ const casters = {
 };
 
 export function cleanDeclarationScope() {
-	declaredVariables = [];
+  declaredVariables = [];
 }
 
 export function getDeclarationScope() {
-	return declaredVariables.slice(0);
+  return declaredVariables.slice(0);
 }
 
 //in case of astexplorer.net debug, copy whole code and uncomment lines after this msg
