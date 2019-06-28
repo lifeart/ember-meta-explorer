@@ -169,7 +169,7 @@ it("can handle basic local declarations", () => {
     App:
       "<h1>{{this.a}}{{this.b}}{{this.c}}{{this.d}}{{this.e}} and {{hash aa=this.a bb=this.b cc=this.c dd=this.d ee=this.e}}</h1>",
     App_declarated:
-      '{{#let (hash a=42 b="1" c={{array 1 false}} d=true e=(hash name=12)) as |ctx|}}<h1>{{ctx.a}}{{ctx.b}}{{ctx.c}}{{ctx.d}}{{ctx.e}} and {{hash aa=ctx.a bb=ctx.b cc=ctx.c dd=ctx.d ee=ctx.e}}</h1>{{/let}}'
+      '{{#let (hash a=42 b=\"1\" c=(array 1 false) d=true e=(hash name=12)) as |ctx|}}<h1>{{ctx.a}}{{ctx.b}}{{ctx.c}}{{ctx.d}}{{ctx.e}} and {{hash aa=ctx.a bb=ctx.b cc=ctx.c dd=ctx.d ee=ctx.e}}</h1>{{/let}}'
   });
 });
 it("can handle spread as arguments for arrow function", () => {
@@ -183,6 +183,114 @@ it("can handle spread as arguments for arrow function", () => {
     ArrowFunctionExpression_declarated: "<h1>{{@value}}</h1>"
   });
   // App.. = <h1>{{@value}}</h1>
+});
+it("can handle basic array join", () => {
+  const input = `
+	  const Headline = ({ value }) => {
+      const result = value.join("a");
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(join @value \"a\")) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle basic array includes", () => {
+  const input = `
+	  const Headline = ({ value }) => {
+      const result = value.includes("a");
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(contains @value \"a\")) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle basic array reverse", () => {
+  const input = `
+	  const Headline = ({ value }) => {
+      const result = value.reverse();
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(reverse @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle basic array reduce", () => {
+  const input = `
+	  const Headline = ({ value, reducer }) => {
+      const result = value.reduce(reducer, 0);
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(reduce @reducer @value 0)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle basic array map", () => {
+  const input = `
+	  const Headline = ({ value, reducer }) => {
+      const result = value.map(reducer);
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(map @reducer @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle basic array slice", () => {
+  const input = `
+	  const Headline = ({ value }) => {
+      const result = value.slice(0, 12);
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(slice 0 12 @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle basic array append", () => {
+  const input = `
+	  const Headline = ({ value }) => {
+      const result = value.append(12);
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(append @value 12)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle basic array filter", () => {
+  const input = `
+	  const Headline = ({ value, reducer }) => {
+      const result = value.filter(reducer);
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(filter @reducer @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle complex path array filter", () => {
+  const input = `
+	  const Headline = ({ value, reducer }) => {
+      const result = value.name.filter(reducer);
+		  return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
+    ArrowFunctionExpression_declarated: "{{#let (hash result=(filter @reducer @value.name)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
 });
 it("can handle spread as arguments for named function", () => {
   const input = `
@@ -409,7 +517,7 @@ it("can handle default ternary assign cases", () => {
   `;
   assert(extractJSXComponents(input), {
     Mailbox: "<div>{{this.name}}</div>",
-    Mailbox_declarated: "{{#let (hash name={{if (gt @unreadMessages 1) 4 5}}) as |ctx|}}<div>{{ctx.name}}</div>{{/let}}"
+    Mailbox_declarated: "{{#let (hash name=(if (gt @unreadMessages 1) 4 5)) as |ctx|}}<div>{{ctx.name}}</div>{{/let}}"
   });
 });
 

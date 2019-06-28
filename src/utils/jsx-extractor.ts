@@ -112,6 +112,7 @@ function jsxComponentExtractor() {
             node.init.type === "ObjectExpression" ||
             node.init.type === "JSXElement" ||
             node.init.type === "JSXFragment" ||
+            node.init.type === "CallExpression" ||
             node.init.type === "LogicalExpression" || 
             node.init.type === "ArrayExpression"
           ) {
@@ -291,7 +292,12 @@ export function extractJSXComponents(jsxInput) {
       let pairs = [];
       resolvedContext.forEach(el => {
         // console.log('el', el, contextItems[el]);
-        pairs.push(pair(el, contextItems[el]));
+        const value = JSON.parse(JSON.stringify(contextItems[el]));
+        //MustacheStatement
+        if (value && typeof value === 'object' && value.type === 'MustacheStatement') {
+          value.type = 'SubExpression';
+        }
+        pairs.push(pair(el, value));
       });
       // console.log('pairs', JSON.stringify(pairs));
       smartDeclaration = print(
@@ -308,6 +314,7 @@ export function extractJSXComponents(jsxInput) {
         if (type === 'external') {
           smartDeclaration = smartDeclaration
             .split(` this.${name} `).join(` @${name} `)
+            .split(` this.${name})`).join(` @${name})`)
             .split(` this.${name}.`).join(` @${name}.`)
             .split(`=this.${name}.`).join(`=@${name}.`)
             .split(`=this.${name} `).join(`=@${name} `);

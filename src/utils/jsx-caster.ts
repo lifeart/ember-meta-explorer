@@ -312,6 +312,87 @@ const casters = {
   },
 
   CallExpression(node, parent) {
+    if (parent && hasTypes(parent, ['VariableDeclarator']) && parent.init ===  node) {
+      if (node.callee.type === "MemberExpression") {
+        if (hasTypes(node.callee.object, ["Identifier", "MemberExpression"]) && node.callee.property.type === "Identifier") {
+          if (node.callee.property.name === "join" && node.arguments.length) {
+            return {
+              type: "SubExpression",
+              hash: bHash(),
+              loc: node.loc,
+              path: cast(node.callee.property, node),
+              params: [cast(node.callee.object, node.callee), cast(node.arguments[0],node)]
+            };
+          } else if (node.callee.property.name === "includes" && node.arguments.length) {
+            // to align with helper names
+            node.callee.property.name = "contains";
+            return {
+              type: "SubExpression",
+              hash: bHash(),
+              loc: node.loc,
+              path: cast(node.callee.property, node),
+              params: [cast(node.callee.object, node.callee), cast(node.arguments[0],node)]
+            };
+          } else if (node.callee.property.name === "reverse" && node.arguments.length === 0) {
+            return {
+              type: "SubExpression",
+              hash: bHash(),
+              loc: node.loc,
+              path: cast(node.callee.property, node),
+              params: [cast(node.callee.object, node.callee)]
+            };
+          } else if (node.callee.property.name === "reduce") {
+            let params = [cast(node.arguments[0]), cast(node.callee.object, node.callee)];
+            if (node.arguments.length === 2) {
+              params.push(cast(node.arguments[1]));
+            }
+            return {
+              type: "SubExpression",
+              hash: bHash(),
+              loc: node.loc,
+              path: cast(node.callee.property, node),
+              params
+            };
+          } else if (node.callee.property.name === "map") {
+            let params = [cast(node.arguments[0]), cast(node.callee.object, node.callee)];
+            return {
+              type: "SubExpression",
+              hash: bHash(),
+              loc: node.loc,
+              path: cast(node.callee.property, node),
+              params
+            };
+          } else if (node.callee.property.name === "slice" && node.arguments.length === 2) {
+            let params = [cast(node.arguments[0]), cast(node.arguments[1]), cast(node.callee.object, node.callee)];
+            return {
+              type: "SubExpression",
+              hash: bHash(),
+              loc: node.loc,
+              path: cast(node.callee.property, node),
+              params
+            };
+          } else if (node.callee.property.name === "append" && node.arguments.length === 1) {
+            let params = [cast(node.callee.object, node.callee), cast(node.arguments[0])];
+            return {
+              type: "SubExpression",
+              hash: bHash(),
+              loc: node.loc,
+              path: cast(node.callee.property, node),
+              params
+            };
+          } else if (node.callee.property.name === "filter" && node.arguments.length === 1) {
+            let params = [cast(node.arguments[0]), cast(node.callee.object, node.callee)];
+            return {
+              type: "SubExpression",
+              hash: bHash(),
+              loc: node.loc,
+              path: cast(node.callee.property, node),
+              params
+            };
+          }
+        }
+      }
+    }
     if (
       parent &&
       hasTypes(parent, ["BinaryExpression", "ConditionalExpression"])
