@@ -191,7 +191,7 @@ const casters = {
   },
   ConditionalExpression(node, parent) {
     const nodeType =
-      parent && parent.type === "ConditionalExpression"
+      parent && (hasTypes(parent, ["ConditionalExpression", "BinaryExpression", "TemplateLiteral"]))
         ? "SubExpression"
         : "MustacheStatement";
 

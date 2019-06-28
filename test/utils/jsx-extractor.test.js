@@ -336,7 +336,27 @@ it("can handle spread for this.props", () => {
     Headline_declarated: "<h1>{{@value}}</h1>"
   });
 });
-
+it("can handle listed call chains", () => {
+  const input = `
+	  function Headline({data, dataMapper, dataReducer, dataFilter}) {
+      const preResult = data.map(dataMapper);
+      const prePreResult = preResult.reduce(dataReducer, 0);
+      const result = prePreResult.filter(dataFilter);
+      return <h1>{result}</h1>;
+		};
+	  `;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated: "{{#let (hash result=(filter @dataFilter (reduce @dataReducer (map @dataMapper @data) 0))) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+  });
+});
+it("can handle concatinated attribute values", () => {
+  const input = 'function Headline({foo, bar}) { let className = `${foo ? "foo" : ""} ${bar}`; return <h1 class={className}>Hi</h1>;}';
+  assert(extractJSXComponents(input), {
+    Headline: "<h1 class={{this.className}}>Hi</h1>",
+    Headline_declarated: "{{#let (hash className=(concat \"\" (if @foo \"foo\" \"\") \" \" @bar \"\")) as |ctx|}}<h1 class={{ctx.className}}>Hi</h1>{{/let}}"
+  });
+});
 it("can handle jsx subdeclarations", () => {
   const input = `
 		function Headline() {
