@@ -350,6 +350,69 @@ it("can handle complexSingleConditional fragment templates", () => {
   });
 });
 
+it("can handle paths from args", ()=> {
+  const input = `
+  function Mailbox({unreadMessages}) {
+    return (<div><h1>Hi</h1>{unreadMessages.length > 0 && <h2>You have {unreadMessages.length}</h2>}</div>);
+  };
+  `;
+  assert(extractJSXComponents(input), {
+    Mailbox: "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
+    Mailbox_declarated: "<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>You have {{@unreadMessages.length}}</h2>{{/if}}</div>"
+  });
+});
+
+it("can handle paths from local vars", ()=> {
+  const input = `
+  function Mailbox({unreadMessages}) {
+    let user = { name: "mike" };
+    return (<div><h1>Hi</h1>{unreadMessages.length > 0 && <h2>{user.name} You have {unreadMessages.length}</h2>}</div>);
+  };
+  `;
+  assert(extractJSXComponents(input), {
+    Mailbox: "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
+    Mailbox_declarated: "{{#let (hash user=(hash name=\"mike\")) as |ctx|}}<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>{{ctx.user.name}} You have {{@unreadMessages.length}}</h2>{{/if}}</div>{{/let}}"
+  });
+});
+
+it("can handle paths from context", ()=> {
+  const input = `
+  function Mailbox({unreadMessages}) {
+    return (<div><h1>Hi</h1>{unreadMessages.length > 0 && <h2>{this.user.name} You have {unreadMessages.length}</h2>}</div>);
+  };
+  `;
+  assert(extractJSXComponents(input), {
+    Mailbox: "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
+    Mailbox_declarated: "<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{@unreadMessages.length}}</h2>{{/if}}</div>"
+  });
+});
+
+it("can handle default assign cases", () => {
+  const input = `
+  function Mailbox({unreadMessages}) {
+    let name = unreadMessages || 12;
+    return (<div>{name}</div>);
+  };
+  `;
+  assert(extractJSXComponents(input), {
+    Mailbox: "<div>{{this.name}}</div>",
+    Mailbox_declarated: "{{#let (hash name=(or @unreadMessages 12)) as |ctx|}}<div>{{ctx.name}}</div>{{/let}}"
+  });
+});
+
+it("can handle default ternary assign cases", () => {
+  const input = `
+  function Mailbox({unreadMessages}) {
+    let name = unreadMessages > 1 ? 4 : 5;
+    return (<div>{name}</div>);
+  };
+  `;
+  assert(extractJSXComponents(input), {
+    Mailbox: "<div>{{this.name}}</div>",
+    Mailbox_declarated: "{{#let (hash name={{if (gt @unreadMessages 1) 4 5}}) as |ctx|}}<div>{{ctx.name}}</div>{{/let}}"
+  });
+});
+
 it("can handle complexSingleConditionalItems templates", () => {
   const input = `
     function MyTemplate() {

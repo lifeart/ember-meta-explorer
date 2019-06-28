@@ -112,6 +112,7 @@ function jsxComponentExtractor() {
             node.init.type === "ObjectExpression" ||
             node.init.type === "JSXElement" ||
             node.init.type === "JSXFragment" ||
+            node.init.type === "LogicalExpression" || 
             node.init.type === "ArrayExpression"
           ) {
             cast(node, parent);
@@ -235,7 +236,7 @@ function astPlugin(declarations) {
           let relatedDeclarations = declarations.filter(
             ([name, value, type]) => {
               return (
-                (original === name || original === "this." + name) &&
+                (original === name || original === "this." + name || original.startsWith("this." + name + '.')) &&
                 value !== undefined &&
                 type === "local"
               );
@@ -251,7 +252,7 @@ function astPlugin(declarations) {
             // console.log('contextItems', original, JSON.stringify(contextItems));
           } else {
             let relatedDeclarations = declarations.filter(([name, , type]) => {
-              return original === "this." + name && type === "external";
+              return (original === "this." + name || original.startsWith("this." + name + '.')) && type === "external";
             });
             if (relatedDeclarations.length) {
               node.this = false;
@@ -303,6 +304,15 @@ export function extractJSXComponents(jsxInput) {
           )
         ])
       );
+      declarationScope.forEach(([name, , type])=>{
+        if (type === 'external') {
+          smartDeclaration = smartDeclaration
+            .split(` this.${name} `).join(` @${name} `)
+            .split(` this.${name}.`).join(` @${name}.`)
+            .split(`=this.${name}.`).join(`=@${name}.`)
+            .split(`=this.${name} `).join(`=@${name} `);
+        }
+      });
       // console.log('smartDeclaration', smartDeclaration, JSON.stringify(resolvedContext));
     }
     // const declarated = addDeclarations(

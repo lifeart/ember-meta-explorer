@@ -1,6 +1,17 @@
 var scopedVariables = [];
 var declaredVariables = [];
 
+function isExternalProperty(varName) {
+  let results = declaredVariables.filter(([name, ,type])=> {
+    return type === "external" && (varName === name || varName.startsWith((name + '.')));
+  });
+  if (results.length) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 function hasComplexIdentifier(id) {
   // console.log('hasComplexIdentifier', JSON.stringify(id), JSON.stringify(declaredVariables));
   if (!id) {
@@ -39,6 +50,7 @@ function operatorToPath(operator, parent = null) {
   const operationMap = {
     if: "if",
     on: "on",
+    "||": "or",
     "+": "inc",
     "-": "dec",
     "&&": "and",
@@ -423,6 +435,15 @@ const casters = {
       parts: items,
       data: isExternal,
       loc: node.loc
+    };
+  },
+  LogicalExpression(node, parent) {
+    return {
+      type: "SubExpression",
+      path: operatorToPath(node.operator),
+      params: [cast(node.left, node), cast(node.right, node)],
+      loc: node.loc,
+      hash: bHash()
     };
   },
   Identifier(node, parent = null) {
