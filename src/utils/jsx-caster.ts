@@ -12,6 +12,17 @@ function isExternalProperty(varName) {
   }
 }
 
+function isDefinedProperty(varName) {
+  let results = declaredVariables.filter(([name, ,type])=> {
+    return type === "local" && (varName === name);
+  });
+  if (results.length) {
+    return results[0][1];
+  } else {
+    return false;
+  }
+}
+
 function hasComplexIdentifier(id) {
   // console.log('hasComplexIdentifier', JSON.stringify(id), JSON.stringify(declaredVariables));
   if (!id) {
@@ -537,6 +548,12 @@ const casters = {
     if (parent && parent.type === "ObjectProperty") {
       if (parent.key === node) {
         return node.name;
+      }
+    }
+    if (parent && parent.type === "MemberExpression") {
+      let maybeProp = isDefinedProperty(node.name);
+      if (maybeProp && typeof maybeProp === 'object' && maybeProp.type) {
+        return maybeProp;
       }
     }
     let prefix =

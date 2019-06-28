@@ -311,6 +311,19 @@ it("can handle spread as arguments for named function", () => {
   //	<p>Hello, {name}</p>
   //  );
 });
+it("can handle local variables composition", () => {
+  const input = `
+  const Headline = ({ value, reducer, matcher }) => {
+    const result = value.name.map(reducer);
+    const filteredResult = result.filter(matcher);
+    return <h1>{filteredResult}</h1>;
+  };
+  `;
+assert(extractJSXComponents(input), {
+  ArrowFunctionExpression: "<h1>{{this.filteredResult}}</h1>",
+  ArrowFunctionExpression_declarated: "{{#let (hash filteredResult=(filter @matcher (map @reducer @value.name))) as |ctx|}}<h1>{{ctx.filteredResult}}</h1>{{/let}}"
+});
+});
 it("can handle spread for this.props", () => {
   const input = `
 	  function Headline() {
