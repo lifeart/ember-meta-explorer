@@ -539,6 +539,14 @@ const casters = {
     };
   },
   Identifier(node, parent = null) {
+    if (node.name === "undefined") {
+      return {
+        type: "UndefinedLiteral",
+        value: undefined,
+        original: undefined,
+        loc: node.loc
+      }
+    }
     if (parent && parent.type === "LogicalExpression" && parent.right === node) {
       let id = hasComplexIdentifier(node);
       if (id && id !== true) {

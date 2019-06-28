@@ -370,7 +370,30 @@ it("can handle jsx subdeclarations", () => {
     tag: "<div></div>"
   });
 });
-
+it("can support undefined", () => {
+  const input = `
+		function Headline() {
+			var tag =  undefined
+			return <h1>{tag}</h1>;
+		  };
+		`;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.tag}}</h1>",
+    Headline_declarated: "{{#let (hash tag=undefined) as |ctx|}}<h1>{{ctx.tag}}</h1>{{/let}}"
+  });
+});
+it("can support null", () => {
+  const input = `
+		function Headline() {
+			var tag =  null
+			return <h1>{tag}</h1>;
+		  };
+		`;
+  assert(extractJSXComponents(input), {
+    Headline: "<h1>{{this.tag}}</h1>",
+    Headline_declarated: "{{#let (hash tag=null) as |ctx|}}<h1>{{ctx.tag}}</h1>{{/let}}"
+  });
+});
 it("can handle jsx subdeclarations in fragments", () => {
   const input = `
 		function Headline() {
