@@ -1,6 +1,20 @@
 var scopedVariables = [];
 var declaredVariables = [];
 
+export function addASTNodeStrips(node) {
+  if (node.type === "MustacheStatement" || node.type === "BlockStatement") {
+    const strip = { open: false, close: false };
+    node.strip = strip;
+    node.openStrip = strip;
+    node.inverseStrip  = strip;
+    node.closeStrip  = strip;
+    if (!('escaped' in node)) {
+      node.escaped = true;
+    }
+  }
+  return node;
+}
+
 function isExternalProperty(varName) {
   let results = declaredVariables.filter(([name, ,type])=> {
     return type === "external" && (varName === name || varName.startsWith((name + '.')));
@@ -198,7 +212,7 @@ const casters = {
     let hasComplexLeft = hasComplexIdentifier(node.consequent);
     let hasComplexRight = hasComplexIdentifier(node.alternate);
     if (hasComplexLeft || hasComplexRight) {
-      let result = {
+      let result = addASTNodeStrips({
         type: "BlockStatement",
         hash: bHash(),
         path: operatorToPath("if"),
@@ -224,7 +238,7 @@ const casters = {
               log: null
             }
           : null
-      };
+      });
 
       if (hasComplexLeft && hasComplexLeft !== true) {
         result.program.body = [hasComplexLeft];
@@ -244,7 +258,7 @@ const casters = {
       return result;
     }
 
-    return {
+    return addASTNodeStrips({
       type: nodeType,
       hash: bHash(),
       loc: node.loc,
@@ -256,7 +270,7 @@ const casters = {
       ],
       program: [],
       inverse: []
-    };
+    });
   },
   BinaryExpression(node) {
     return {
@@ -268,7 +282,7 @@ const casters = {
     };
   },
   UpdateExpression(node, parent) {
-    return {
+    return addASTNodeStrips({
       type:
         parent && parent.type === "JSXExpressionContainer"
           ? "MustacheStatement"
@@ -277,7 +291,7 @@ const casters = {
       loc: node.loc,
       path: operatorToPath(node.operator),
       params: [cast(node.argument, node)]
-    };
+    });
   },
   ArrowFunctionExpression(node) {
     node.params.forEach(param => {
@@ -609,7 +623,7 @@ const casters = {
     return results;
   },
   ObjectExpression(node, parent) {
-    return {
+    return addASTNodeStrips({
       type: hasTypes(parent, [
         "ObjectProperty",
         "ArrayExpression",
@@ -645,10 +659,10 @@ const casters = {
         data: false,
         loc: null
       }
-    };
+    });
   },
   ArrayExpression(node, parent) {
-    return {
+    return addASTNodeStrips({
       type: hasTypes(parent, [
         "ObjectProperty",
         "ArrayExpression",
@@ -669,7 +683,7 @@ const casters = {
         data: false,
         loc: null
       }
-    };
+    });
   },
   TemplateElement(node, parent) {
     return {
@@ -689,7 +703,7 @@ const casters = {
         parts.push(expressions.shift());
       }
     });
-    return {
+    return addASTNodeStrips({
       type: hasTypes(parent, ["ObjectProperty", "ArrayExpression"])
         ? "SubExpression"
         : "MustacheStatement",
@@ -705,7 +719,7 @@ const casters = {
         data: false,
         loc: null
       }
-    };
+    });
   },
   BlockStatement(node, parent) {
     let returns = node.body.filter(el => el.type === "ReturnStatement");
@@ -729,7 +743,7 @@ const casters = {
     ) {
       return cast(expression, node);
     } else if (node.expression.type === "LogicalExpression") {
-      return {
+      return addASTNodeStrips({
         type: "BlockStatement",
         path: operatorToPath(
           expression.operator === "&&" ? "if" : expression.operator
@@ -739,7 +753,7 @@ const casters = {
         inverse: null,
         hash: bHash(),
         program: cast(expression.right, expression)
-      };
+      });
     }
     let result = {
       type: "MustacheStatement",
@@ -757,7 +771,7 @@ const casters = {
           "FunctionExpression"
         ])
       ) {
-        return {
+        return addASTNodeStrips({
           type: "BlockStatement",
           path: pathExpressionFromParam(cast(expression, node)),
           params: [cleanupBlockParam(cast(expression, node))],
@@ -765,7 +779,7 @@ const casters = {
           inverse: null,
           hash: bHash(),
           program: cast(expression.arguments[0], expression)
-        };
+        });
       } else {
         result.path = cast(expression, node);
         result.params = expression.arguments.map(arg =>
@@ -782,7 +796,7 @@ const casters = {
       result.params = [];
       result.path = cast(node.expression);
     }
-    return result;
+    return addASTNodeStrips(result);
   },
   JSXText(node) {
     return casters["StringLiteral"](node);
@@ -854,7 +868,7 @@ const casters = {
       if (result.value.type === "MustacheStatement") {
         result.value.type = "SubExpression";
       }
-      return {
+      return addASTNodeStrips({
         type: "ElementModifierStatement",
         path: {
           type: "PathExpression",
@@ -867,7 +881,7 @@ const casters = {
         params: Array.isArray(result.value) ? result.value : [result.value],
         hash: bHash(),
         loc: node.loc
-      };
+      });
     }
 
     if (isComponent) {
