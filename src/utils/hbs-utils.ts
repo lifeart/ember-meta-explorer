@@ -1,4 +1,4 @@
-const syntax = require("@glimmer/syntax");
+export const syntax = require("@glimmer/syntax");
 const { preprocess } = syntax;
 
 type THbsMetaKey =
