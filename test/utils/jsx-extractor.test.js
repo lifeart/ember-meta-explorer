@@ -432,6 +432,48 @@ export default class extends React.Component {
   });
 });
 
+it("can handle inline arrays in fragments", () => {
+  const input = `
+ export function template() {
+  return  <ul class="companies">{
+    [{
+      name: "Widgets",
+      contacts: [
+        { name: "Chad", email: "345@gmail.com", phone: "123" }
+      ]
+	  }].map((company) => <><li class="company"><Company company={company}/></li></>)
+	}</ul>;
+
+ }
+  `;
+  assert(extractJSXComponents(input), {
+    "ArrowFunctionExpression": "<li class=\"company\"><Company @company={{this.company}} /></li>",
+    "ArrowFunctionExpression_declarated": "<li class=\"company\"><Company @company={{@company}} /></li>",
+    "template": "<ul class=\"companies\">{{#each (array (hash name=\"Widgets\" contacts=(array (hash name=\"Chad\" email=\"345@gmail.com\" phone=\"123\")))) as |company|}}<li class=\"company\"><Company @company={{company}} /></li>{{/each}}</ul>",
+  });
+});
+
+it("can handle inline arrays", () => {
+  const input = `
+ export function template() {
+  return  <ul class="companies">{
+    [{
+      name: "Widgets",
+      contacts: [
+        { name: "Chad", email: "345@gmail.com", phone: "123" }
+      ]
+	  }].map((company) => <li class="company"><Company company={company}/></li>)
+	}</ul>;
+
+ }
+  `;
+  assert(extractJSXComponents(input), {
+    "ArrowFunctionExpression": "<li class=\"company\"><Company @company={{this.company}} /></li>",
+    "ArrowFunctionExpression_declarated": "<li class=\"company\"><Company @company={{@company}} /></li>",
+    "template": "<ul class=\"companies\">{{#each (array (hash name=\"Widgets\" contacts=(array (hash name=\"Chad\" email=\"345@gmail.com\" phone=\"123\")))) as |company|}}<li class=\"company\"><Company @company={{company}} /></li>{{/each}}</ul>",
+  });
+});
+
 it("can handle jsx subdeclarations chains in fragments", () => {
   const input = `
 		function Headline() {

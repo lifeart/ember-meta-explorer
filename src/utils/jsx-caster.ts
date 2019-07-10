@@ -6,18 +6,30 @@ export function addASTNodeStrips(node) {
     const strip = { open: false, close: false };
     node.strip = strip;
     node.openStrip = strip;
-    node.inverseStrip  = strip;
-    node.closeStrip  = strip;
-    if (!('escaped' in node)) {
+    node.inverseStrip = strip;
+    node.closeStrip = strip;
+    if (!("escaped" in node)) {
       node.escaped = true;
+    }
+  }
+  if (node.program && node.program.type && node.program.type === "Block") {
+    if (
+      node.program.body &&
+      node.program.body.type &&
+      node.program.body.type === "Template"
+    ) {
+      node.program.body = node.program.body.body;
     }
   }
   return node;
 }
 
 function isExternalProperty(varName) {
-  let results = declaredVariables.filter(([name, ,type])=> {
-    return type === "external" && (varName === name || varName.startsWith((name + '.')));
+  let results = declaredVariables.filter(([name, , type]) => {
+    return (
+      type === "external" &&
+      (varName === name || varName.startsWith(name + "."))
+    );
   });
   if (results.length) {
     return true;
@@ -27,8 +39,8 @@ function isExternalProperty(varName) {
 }
 
 function isDefinedProperty(varName) {
-  let results = declaredVariables.filter(([name, ,type])=> {
-    return type === "local" && (varName === name);
+  let results = declaredVariables.filter(([name, , type]) => {
+    return type === "local" && varName === name;
   });
   if (results.length) {
     return results[0][1];
@@ -38,20 +50,23 @@ function isDefinedProperty(varName) {
 }
 
 function hasComplexIdentifier(id) {
-  // console.log('hasComplexIdentifier', JSON.stringify(id), JSON.stringify(declaredVariables));
   if (!id) {
     return false;
   }
-  if (id.type === 'JSXElement') {
+  if (id.type === "JSXElement") {
     return true;
   }
-  if (id.type === 'JSXFragment') {
+  if (id.type === "JSXFragment") {
     return true;
   }
   if (id.type === "Identifier") {
-    let decs = declaredVariables.filter(([name, value])=>{
-      return name === id.name && value && (typeof value === "object" &&
-      (value.type === "Template" || value.type === "ElementNode"));
+    let decs = declaredVariables.filter(([name, value]) => {
+      return (
+        name === id.name &&
+        value &&
+        (typeof value === "object" &&
+          (value.type === "Template" || value.type === "ElementNode"))
+      );
     });
     if (decs.length) {
       return decs[0][1];
@@ -115,6 +130,13 @@ function operatorToPath(operator, parent = null) {
 }
 
 function cleanupBlockParam(node) {
+  if (node.type === "SubExpression") {
+    const param = node.params[node.params.length - 1];
+    if (param.type !== "MustacheStatement") {
+      return param;
+    }
+    return Object.assign({}, param, { type: "SubExpression" });
+  }
   let parts = node.parts;
   parts.pop();
   if (node.original.startsWith("@")) {
@@ -127,7 +149,13 @@ function cleanupBlockParam(node) {
 }
 
 function pathExpressionFromParam(node) {
-  if (node.original.endsWith(".map")) {
+  const isSub =
+    node.type === "SubExpression" &&
+    node.path &&
+    node.path.type === "PathExpression" &&
+    node.path.original === "map";
+
+  if (isSub || node.original.endsWith(".map")) {
     return {
       type: "PathExpression",
       original: "each",
@@ -156,12 +184,18 @@ function flattenMemberExpression(node) {
 }
 
 export function cast(node, parent = null) {
-  if (node === null) {
+  if (node === null || node.__casted === true) {
     return node;
   }
   const type = node.type;
   if (type in casters) {
-    return casters[type](node, parent);
+    const result = casters[type](node, parent);
+    if (typeof result === "object" && result !== null) {
+      Object.assign(result, {
+        __casted: true
+      });
+    }
+    return result;
   } else {
     return {
       type: "Uncasted",
@@ -205,7 +239,12 @@ const casters = {
   },
   ConditionalExpression(node, parent) {
     const nodeType =
-      parent && (hasTypes(parent, ["ConditionalExpression", "BinaryExpression", "TemplateLiteral"]))
+      parent &&
+      hasTypes(parent, [
+        "ConditionalExpression",
+        "BinaryExpression",
+        "TemplateLiteral"
+      ])
         ? "SubExpression"
         : "MustacheStatement";
 
@@ -220,7 +259,7 @@ const casters = {
         params: [cast(node.test, node)],
         program: {
           type: "Block",
-          body: 
+          body:
             node.consequent.type === "JSXFragment"
               ? cast(node.consequent, node)
               : [cast(node.consequent, node)],
@@ -293,6 +332,9 @@ const casters = {
       params: [cast(node.argument, node)]
     });
   },
+  ExpressionStatement(node) {
+    return cast(node.expression, node);
+  },
   ArrowFunctionExpression(node) {
     node.params.forEach(param => {
       if (param.type === "Identifier") {
@@ -337,18 +379,35 @@ const casters = {
   },
 
   CallExpression(node, parent) {
-    if (parent && hasTypes(parent, ['VariableDeclarator']) && parent.init ===  node) {
+    if (
+      parent &&
+      ((hasTypes(parent, ["VariableDeclarator"]) && parent.init === node) ||
+        hasTypes(parent, ["JSXExpressionContainer"]))
+    ) {
       if (node.callee.type === "MemberExpression") {
-        if (hasTypes(node.callee.object, ["Identifier", "MemberExpression"]) && node.callee.property.type === "Identifier") {
+        if (
+          hasTypes(node.callee.object, [
+            "Identifier",
+            "MemberExpression",
+            "ArrayExpression"
+          ]) &&
+          node.callee.property.type === "Identifier"
+        ) {
           if (node.callee.property.name === "join" && node.arguments.length) {
             return {
               type: "SubExpression",
               hash: bHash(),
               loc: node.loc,
               path: cast(node.callee.property, node),
-              params: [cast(node.callee.object, node.callee), cast(node.arguments[0],node)]
+              params: [
+                cast(node.callee.object, node.callee),
+                cast(node.arguments[0], node)
+              ]
             };
-          } else if (node.callee.property.name === "includes" && node.arguments.length) {
+          } else if (
+            node.callee.property.name === "includes" &&
+            node.arguments.length
+          ) {
             // to align with helper names
             node.callee.property.name = "contains";
             return {
@@ -356,9 +415,15 @@ const casters = {
               hash: bHash(),
               loc: node.loc,
               path: cast(node.callee.property, node),
-              params: [cast(node.callee.object, node.callee), cast(node.arguments[0],node)]
+              params: [
+                cast(node.callee.object, node.callee),
+                cast(node.arguments[0], node)
+              ]
             };
-          } else if (node.callee.property.name === "reverse" && node.arguments.length === 0) {
+          } else if (
+            node.callee.property.name === "reverse" &&
+            node.arguments.length === 0
+          ) {
             return {
               type: "SubExpression",
               hash: bHash(),
@@ -367,7 +432,10 @@ const casters = {
               params: [cast(node.callee.object, node.callee)]
             };
           } else if (node.callee.property.name === "reduce") {
-            let params = [cast(node.arguments[0]), cast(node.callee.object, node.callee)];
+            let params = [
+              cast(node.arguments[0]),
+              cast(node.callee.object, node.callee)
+            ];
             if (node.arguments.length === 2) {
               params.push(cast(node.arguments[1]));
             }
@@ -379,7 +447,10 @@ const casters = {
               params
             };
           } else if (node.callee.property.name === "map") {
-            let params = [cast(node.arguments[0]), cast(node.callee.object, node.callee)];
+            let params = [
+              cast(node.arguments[0]),
+              cast(node.callee.object, node.callee)
+            ];
             return {
               type: "SubExpression",
               hash: bHash(),
@@ -387,8 +458,15 @@ const casters = {
               path: cast(node.callee.property, node),
               params
             };
-          } else if (node.callee.property.name === "slice" && node.arguments.length === 2) {
-            let params = [cast(node.arguments[0]), cast(node.arguments[1]), cast(node.callee.object, node.callee)];
+          } else if (
+            node.callee.property.name === "slice" &&
+            node.arguments.length === 2
+          ) {
+            let params = [
+              cast(node.arguments[0]),
+              cast(node.arguments[1]),
+              cast(node.callee.object, node.callee)
+            ];
             return {
               type: "SubExpression",
               hash: bHash(),
@@ -396,8 +474,14 @@ const casters = {
               path: cast(node.callee.property, node),
               params
             };
-          } else if (node.callee.property.name === "append" && node.arguments.length === 1) {
-            let params = [cast(node.callee.object, node.callee), cast(node.arguments[0])];
+          } else if (
+            node.callee.property.name === "append" &&
+            node.arguments.length === 1
+          ) {
+            let params = [
+              cast(node.callee.object, node.callee),
+              cast(node.arguments[0])
+            ];
             return {
               type: "SubExpression",
               hash: bHash(),
@@ -405,8 +489,14 @@ const casters = {
               path: cast(node.callee.property, node),
               params
             };
-          } else if (node.callee.property.name === "filter" && node.arguments.length === 1) {
-            let params = [cast(node.arguments[0]), cast(node.callee.object, node.callee)];
+          } else if (
+            node.callee.property.name === "filter" &&
+            node.arguments.length === 1
+          ) {
+            let params = [
+              cast(node.arguments[0]),
+              cast(node.callee.object, node.callee)
+            ];
             return {
               type: "SubExpression",
               hash: bHash(),
@@ -448,7 +538,6 @@ const casters = {
     return result;
   },
   VariableDeclarator(node) {
-    // console.log('VariableDeclarator', JSON.stringify(node));
     if (node.id && node.id.type === "Identifier") {
       let result = [
         node.id.name,
@@ -559,9 +648,13 @@ const casters = {
         value: undefined,
         original: undefined,
         loc: node.loc
-      }
+      };
     }
-    if (parent && parent.type === "LogicalExpression" && parent.right === node) {
+    if (
+      parent &&
+      parent.type === "LogicalExpression" &&
+      parent.right === node
+    ) {
       let id = hasComplexIdentifier(node);
       if (id && id !== true) {
         return id;
@@ -574,7 +667,7 @@ const casters = {
     }
     if (parent && parent.type === "MemberExpression") {
       let maybeProp = isDefinedProperty(node.name);
-      if (maybeProp && typeof maybeProp === 'object' && maybeProp.type) {
+      if (maybeProp && typeof maybeProp === "object" && maybeProp.type) {
         return maybeProp;
       }
     }
@@ -604,16 +697,15 @@ const casters = {
   },
   JSXFragment(node, parent) {
     let results = node.children.map(el => cast(el, node));
-    if (parent && parent.type === "ReturnStatement") {
+    if (
+      parent &&
+      hasTypes(parent, [
+        "ReturnStatement",
+        "VariableDeclarator",
+        "ArrowFunctionExpression"
+      ])
+    ) {
       return {
-        type: "Template",
-        body: results,
-        blockParams: [],
-        loc: parent.loc
-      };
-    }
-    if (parent && parent.type === "VariableDeclarator") {
-       return {
         type: "Template",
         body: results,
         blockParams: [],
@@ -1008,13 +1100,13 @@ export function getDeclarationScope() {
   return declaredVariables.slice(0);
 }
 
-//in case of astexplorer.net debug, copy whole code and uncomment lines after this msg
-// export default function () {
-//   return {
-//     visitor: {
-//       JSXElement(path) {
-//         console.log(cast(path.node));
-//       }
-//     }
-//   };
-// }
+// in case of astexplorer.net debug, copy whole code and uncomment lines after this msg
+export default function() {
+  return {
+    visitor: {
+      JSXElement(path) {
+        console.log(cast(path.node));
+      }
+    }
+  };
+}
