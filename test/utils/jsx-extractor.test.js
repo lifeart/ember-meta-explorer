@@ -408,6 +408,30 @@ it("can handle jsx subdeclarations in fragments", () => {
   });
 });
 
+it("can handle basic jsx classes", () => {
+  const input = `
+  // app/components/my-react-component.js
+import React from 'react';
+import WithEmberSupport from 'ember-react-components';
+
+@WithEmberSupport
+export default class extends React.Component {
+  render() {
+    const { name } = this.props;
+
+    return (
+      <p>Hello, {name}</p>
+    );
+  }
+}
+  `;
+
+  assert(extractJSXComponents(input), {
+    render: "<p>Hello, {{this.name}}</p>",
+    render_declarated: "<p>Hello, {{@name}}</p>"
+  });
+});
+
 it("can handle jsx subdeclarations chains in fragments", () => {
   const input = `
 		function Headline() {
