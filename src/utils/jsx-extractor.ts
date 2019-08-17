@@ -36,6 +36,23 @@ function addComponent(name, content) {
   extractedComponents[uniqName] = content;
 }
 
+
+export function extractComponentFromClassMethod(path) {
+  const node = path.node;
+  const keyName = node.key.name;
+  extractedComponents = {};
+  declarations = {};
+  cleanDeclarationScope();
+  addComponent(keyName, print(cast(node.body, node)));
+  cleanupExtractedComponents();
+  const primaryKey = `${keyName}_declarated`;
+  if (primaryKey in extractedComponents) {
+    return extractedComponents[primaryKey];
+  } else {
+    return extractedComponents[keyName];
+  }
+}
+
 function jsxComponentExtractor() {
   extractedComponents = {};
   declarations = {};
@@ -274,12 +291,7 @@ function astPlugin(declarations) {
   };
 }
 
-export function extractJSXComponents(jsxInput) {
-  let ast = parseScriptFile(jsxInput, {
-    filename: "dummy.tsx",
-    parserOpts: { isTSX: true }
-  });
-  traverse(ast, jsxComponentExtractor());
+function cleanupExtractedComponents() {
   const declarationScope = getDeclarationScope();
   // console.log('declarationScope', JSON.stringify(declarationScope));
   Object.keys(extractedComponents).forEach(componentName => {
@@ -348,6 +360,14 @@ export function extractJSXComponents(jsxInput) {
       extractedComponents[componentName + "_declarated"] = smartDeclaration;
     }
   });
+}
 
+export function extractJSXComponents(jsxInput) {
+  let ast = parseScriptFile(jsxInput, {
+    filename: "dummy.tsx",
+    parserOpts: { isTSX: true }
+  });
+  traverse(ast, jsxComponentExtractor());
+  cleanupExtractedComponents();
   return extractedComponents;
 }

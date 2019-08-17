@@ -2,11 +2,169 @@
 /* eslint-env jest */
 /* eslint-env node */
 
-const { extractJSXComponents } = require("../../dist/utils/jsx-extractor");
+const { extractJSXComponents, extractComponentFromClassMethod } = require("../../dist/utils/jsx-extractor");
 
 function assert(left, right) {
   expect(left).toEqual(right);
 }
+
+it("can work with glimmerx template declaration", () => {
+  const input = {
+    "type": "ClassMethod",
+    "start": 30,
+    "end": 80,
+    "loc": {
+      "start": {
+        "line": 2,
+        "column": 3
+      },
+      "end": {
+        "line": 4,
+        "column": 5
+      }
+    },
+    "static": true,
+    "key": {
+      "type": "Identifier",
+      "start": 37,
+      "end": 45,
+      "loc": {
+        "start": {
+          "line": 2,
+          "column": 10
+        },
+        "end": {
+          "line": 2,
+          "column": 18
+        },
+        "identifierName": "template"
+      },
+      "name": "template"
+    },
+    "computed": false,
+    "kind": "method",
+    "id": null,
+    "generator": false,
+    "async": false,
+    "params": [],
+    "body": {
+      "type": "BlockStatement",
+      "start": 48,
+      "end": 80,
+      "loc": {
+        "start": {
+          "line": 2,
+          "column": 21
+        },
+        "end": {
+          "line": 4,
+          "column": 5
+        }
+      },
+      "body": [
+        {
+          "type": "ReturnStatement",
+          "start": 55,
+          "end": 74,
+          "loc": {
+            "start": {
+              "line": 3,
+              "column": 5
+            },
+            "end": {
+              "line": 3,
+              "column": 24
+            }
+          },
+          "argument": {
+            "type": "JSXElement",
+            "start": 62,
+            "end": 73,
+            "loc": {
+              "start": {
+                "line": 3,
+                "column": 12
+              },
+              "end": {
+                "line": 3,
+                "column": 23
+              }
+            },
+            "openingElement": {
+              "type": "JSXOpeningElement",
+              "start": 62,
+              "end": 67,
+              "loc": {
+                "start": {
+                  "line": 3,
+                  "column": 12
+                },
+                "end": {
+                  "line": 3,
+                  "column": 17
+                }
+              },
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 63,
+                "end": 66,
+                "loc": {
+                  "start": {
+                    "line": 3,
+                    "column": 13
+                  },
+                  "end": {
+                    "line": 3,
+                    "column": 16
+                  }
+                },
+                "name": "div"
+              },
+              "attributes": [],
+              "selfClosing": false
+            },
+            "closingElement": {
+              "type": "JSXClosingElement",
+              "start": 67,
+              "end": 73,
+              "loc": {
+                "start": {
+                  "line": 3,
+                  "column": 17
+                },
+                "end": {
+                  "line": 3,
+                  "column": 23
+                }
+              },
+              "name": {
+                "type": "JSXIdentifier",
+                "start": 69,
+                "end": 72,
+                "loc": {
+                  "start": {
+                    "line": 3,
+                    "column": 19
+                  },
+                  "end": {
+                    "line": 3,
+                    "column": 22
+                  }
+                },
+                "name": "div"
+              }
+            },
+            "children": []
+          }
+        }
+      ],
+      "directives": []
+    }
+  };
+
+
+  assert(extractComponentFromClassMethod({ node: input }), '<div></div>');
+});
 
 it("can extract simple JSX components from file", () => {
   const input = `
