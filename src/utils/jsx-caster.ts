@@ -896,6 +896,19 @@ const casters = {
   JSXEmptyExpression(node) {
     return { type: "TextNode", chars: "", loc: node.loc };
   },
+  ClassMethod(node) {
+    node.params.forEach(param => {
+      if (param.type === "Identifier") {
+        let result = [param.name, undefined, "external"];
+        declaredVariables.push(result);
+      } else if (param.type === "ObjectPattern") {
+        param.properties.forEach(prop => {
+          let result = [prop.key.name, undefined, "external"];
+          declaredVariables.push(result);
+        });
+      }
+    });
+  },
   FunctionDeclaration(node) {
     node.params.forEach(param => {
       if (param.type === "Identifier") {

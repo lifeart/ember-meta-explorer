@@ -43,6 +43,7 @@ export function extractComponentFromClassMethod(path) {
   extractedComponents = {};
   declarations = {};
   cleanDeclarationScope();
+  cast(node);
   addComponent(keyName, print(cast(node.body, node)));
   cleanupExtractedComponents();
   const primaryKey = `${keyName}_declarated`;
