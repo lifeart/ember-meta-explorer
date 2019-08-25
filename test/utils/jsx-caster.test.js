@@ -334,6 +334,10 @@ it("support simple computed expressions", ()=>{
   const input = `<div>{items[name]}</div>`;
   assert(toHBS(input), '<div>{{get this.items this.name}}</div>')
 });
+it("support complex computed expressions", ()=>{
+  const input = `<div>{items[name][bar][baz]}</div>`;
+  assert(toHBS(input), '<div>{{get (get (get this.items this.name) this.bar) this.baz}}</div>')
+});
 it("support objec keys iterators", ()=>{
   const input = `<div>{Object.keys(colors).map(color => (<Swatch name={color} />))}</div>`;
   assert(toHBS(input),'<div>{{#each-in colors as |color|}}<Swatch @name={{color}} />{{/each-in}}</div>')
