@@ -1,6 +1,8 @@
 var scopedVariables = [];
 var declaredVariables = [];
 
+import { patternMatch } from './hbs-utils';
+
 export function addASTNodeStrips(node) {
   if (node.type === "MustacheStatement" || node.type === "BlockStatement") {
     const strip = { open: false, close: false };
@@ -10,6 +12,12 @@ export function addASTNodeStrips(node) {
     node.closeStrip = strip;
     if (!("escaped" in node)) {
       node.escaped = true;
+    }
+  }
+  if (node.type === "MustacheStatement") {
+    if (node.path && node.path.type === 'SubExpression') {
+      node.params = node.path.params;
+      node.path = node.path.path;
     }
   }
   if (node.program && node.program.type && node.program.type === "Block") {
@@ -155,7 +163,7 @@ function pathExpressionFromParam(node) {
     node.path.type === "PathExpression" &&
     node.path.original === "map";
 
-  if (isSub || node.original.endsWith(".map")) {
+  if (isSub || node.original && node.original.endsWith(".map")) {
     return {
       type: "PathExpression",
       original: "each",
@@ -598,6 +606,31 @@ const casters = {
     }
   },
   MemberExpression(node, parent) {
+    if (node.computed) {
+      return {
+        "type": 'SubExpression',
+        "path": {
+          "type": "PathExpression",
+          "original": "get",
+          "this": false,
+          "parts": [
+            "get"
+          ],
+          "data": false,
+          "loc": null
+        },
+        "params": [
+          cast(node.object, node),
+          cast(node.property, node)
+        ],
+        "hash": {
+          "type": "Hash",
+          "pairs": [],
+          "loc": null
+        },
+        "loc": null
+      };
+    }
     let items = flattenMemberExpression(node);
     let prefix = hasInScope(items[0]) ? "" : "this.";
     let original = prefix + items.join(".");
@@ -863,6 +896,53 @@ const casters = {
           "FunctionExpression"
         ])
       ) {
+
+        // is Object.keys(data).map((item)=>...)
+      if (patternMatch(expression, {
+        callee: {
+          type: 'MemberExpression',
+          computed: false,
+          object: {
+            type: 'CallExpression',
+            callee: {
+              type: "MemberExpression",
+              object: {
+                type: 'Identifier',
+                name: 'Object'
+              },
+              computed: false,
+              property: {
+                type: 'Identifier',
+                name: 'keys'
+              }
+            }
+          },
+          property: {
+            type: 'Identifier',
+            name: 'map'
+          }
+        }
+      })) {
+        // let params = [
+        //   cast(node.callee.object.arguments[0]),
+        //   cast(node.arguments[0].params[0], node.arguments[0])
+        // ];
+        return addASTNodeStrips({
+          type: "BlockStatement",
+          path: {
+            type: 'PathExpression',
+            original: 'each-in',
+            this: false,
+            parts: ['each-in'],
+            data: false
+          },
+          params: [cast(expression.callee.object.arguments[0], expression.callee.object)],
+          loc: expression.loc,
+          inverse: null,
+          hash: bHash(),
+          program: cast(expression.arguments[0], expression)
+        });
+      } else {
         return addASTNodeStrips({
           type: "BlockStatement",
           path: pathExpressionFromParam(cast(expression, node)),
@@ -872,6 +952,7 @@ const casters = {
           hash: bHash(),
           program: cast(expression.arguments[0], expression)
         });
+      }
       } else {
         result.path = cast(expression, node);
         result.params = expression.arguments.map(arg =>
@@ -886,7 +967,7 @@ const casters = {
       ];
     } else {
       result.params = [];
-      result.path = cast(node.expression);
+      result.path = cast(node.expression, node);
     }
     return addASTNodeStrips(result);
   },

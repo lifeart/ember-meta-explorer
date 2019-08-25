@@ -330,6 +330,14 @@ it("support basic props mapping with true fn and multiple returns", () => {
   const input = `(<ul>{this.props.todos.map(function(todo){ return <><TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} /><div></div></>})}</ul>);`;
   assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} /><div></div>{{/each}}</ul>");
 });
+it("support simple computed expressions", ()=>{
+  const input = `<div>{items[name]}</div>`;
+  assert(toHBS(input), '<div>{{get this.items this.name}}</div>')
+});
+it("support objec keys iterators", ()=>{
+  const input = `<div>{Object.keys(colors).map(color => (<Swatch name={color} />))}</div>`;
+  assert(toHBS(input),'<div>{{#each-in colors as |color|}}<Swatch @name={{color}} />{{/each-in}}</div>')
+})
 it("support basic types", () => {
   const input = `
   <div>{item.name}</div>
