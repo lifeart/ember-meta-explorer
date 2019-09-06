@@ -166,6 +166,35 @@ it("can work with glimmerx template declaration", () => {
   assert(extractComponentFromClassMethod({ node: input }), '<div></div>');
 });
 
+it("support children property as yield", () => {
+  const input = `export function template({children}) { return <div>{children}</div>};`;
+  assert(extractJSXComponents(input), {
+    template: '<div>{{this.children}}</div>',
+    template_declarated: '<div>{{yield}}</div>'
+  });
+});
+
+it("support children property as yield", () => {
+  const input = `export function template(any) { return <div>{any.children}</div>};`;
+  assert(extractJSXComponents(input), {
+    template: '<div>{{this.any.children}}</div>',
+    template_declarated: '<div>{{yield}}</div>'
+  });
+});
+
+it("support style objects via style modifier", () => {
+  const input = '<div style={{color:"red"}}></div>';
+  assert(extractJSXComponents(input), {
+    root: '<div {{style (hash color="red")}}></div>'
+  });
+});
+it("support style modifier over components", () => {
+  const input = `<ConfLogo style={{width:'20px', 'background-color': 'red'}} />`;
+  assert(extractJSXComponents(input), {
+    root: '<div {{style (hash color="red")}}></div>'
+  });
+});
+
 it("can extract simple JSX components from file", () => {
   const input = `
 	  
@@ -279,6 +308,18 @@ it("can extract component from object property", () => {
 	  `;
   assert(extractJSXComponents(input), {
     name: "<div></div>"
+  });
+});
+it("can support react sketchapp examples", () => {
+  const input = `
+  const Swatch = ({ name, hex }: SwatchProps) => (
+    <View name={name} style={{ height: 96, width: 96, margin: 4, backgroundColor: hex, padding: 8 }} > <Text name="Swatch Name" style={{ color: textColor(hex), fontWeight: 'bold' }} >{name}</Text> <Text name="Swatch Hex" style={{ color: textColor(hex) }}>{hex}</Text> </View>
+  );
+  
+  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<View @name={{this.name}} {{style (hash height=96 width=96 margin=4 backgroundColor=this.hex padding=8)}}> <Text @name=\"Swatch Name\" {{style (hash color=(textColor hex) fontWeight=\"bold\")}}>{{this.name}}</Text> <Text @name=\"Swatch Hex\" {{style (hash color=(textColor hex))}}>{{this.hex}}</Text> </View>",
+    ArrowFunctionExpression_declarated: "<View @name={{@name}} {{style (hash height=96 width=96 margin=4 backgroundColor=@hex padding=8)}}> <Text @name=\"Swatch Name\" {{style (hash color=(textColor hex) fontWeight=\"bold\")}}>{{@name}}</Text> <Text @name=\"Swatch Hex\" {{style (hash color=(textColor hex))}}>{{@hex}}</Text> </View>"
   });
 });
 it("can handle basic string declarations", () => {

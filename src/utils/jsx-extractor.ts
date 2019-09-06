@@ -283,6 +283,12 @@ function astPlugin(declarations) {
               node.this = false;
               node.data = true;
               node.original = "@" + node.original.replace("this.", "");
+
+              if (node.original === '@children' || (node.original.startsWith('@') && node.original.endsWith('.children'))) {
+                node.original = 'yield';
+                node.parts = ['yield'];
+                node.data = false;
+              }
             }
           }
           return node;

@@ -387,6 +387,15 @@ const casters = {
   },
 
   CallExpression(node, parent) {
+    if (parent && parent.type === 'ObjectProperty') {
+      return {
+        type: "SubExpression",
+        hash: bHash(),
+        loc: node.loc,
+        path: cast(node.callee, node),
+        params: node.arguments.map(arg => cast(arg, node))
+      };
+    }
     if (
       parent &&
       ((hasTypes(parent, ["VariableDeclarator"]) && parent.init === node) ||
@@ -711,6 +720,18 @@ const casters = {
     if (hasInScope(node.name)) {
       prefix = "";
     }
+
+    //   if (isExternalProperty(node.name) && !hasInScope(node.name) && !isDefinedProperty(node.name) && (!node.name.startsWith('this.'))) {
+    //   return {
+    //     type: "PathExpression",
+    //     original: '@' + node.name,
+    //     this: false,
+    //     parts: [node.name],
+    //     data: true,
+    //     loc: node.loc
+    //   };
+    // }
+  
     return {
       type: "PathExpression",
       original: prefix + node.name,
@@ -1048,6 +1069,10 @@ const casters = {
     let isComponent =
       parent &&
       parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
+
+    if (result.name === 'style' && result.value.type === 'MustacheStatement') {
+      result.name = 'mod-style';
+    }
 
     if (result.name.startsWith("mod-")) {
       let modName = result.name.replace("mod-", "");
