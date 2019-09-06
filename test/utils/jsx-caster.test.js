@@ -238,7 +238,7 @@ it("support template strings using concat", () => {
 
 it("support string concatination", () => {
   const input = '(<MyComponent name={"3" + 2} />);';
-  assert(toHBS(input), '<MyComponent @name={{concat "3" 2}} />');
+  assert(toHBS(input), '<MyComponent @name={{inc "3" 2}} />');
 });
 
 it("support angle components attrs", () => {

@@ -107,6 +107,7 @@ function operatorToPath(operator, parent = null) {
     "==": "eq",
     "===": "eq",
     "!=": "not-eq",
+    "!==": "not-eq",
     "++": "inc",
     "--": "dec",
     "<": "lt",
@@ -117,15 +118,6 @@ function operatorToPath(operator, parent = null) {
   };
 
   let resolvedResult = operationMap[operator];
-  if (
-    parent &&
-    parent.type === "BinaryExpression" &&
-    parent.left.type === "StringLiteral"
-  ) {
-    if (resolvedResult === "inc") {
-      resolvedResult = "concat";
-    }
-  }
 
   return {
     type: "PathExpression",
@@ -527,7 +519,11 @@ const casters = {
     }
     if (
       parent &&
-      hasTypes(parent, ["BinaryExpression", "ConditionalExpression"])
+      hasTypes(parent, [
+        "BinaryExpression",
+        "ConditionalExpression",
+        "LogicalExpression"
+      ])
     ) {
       increaseScope([node.callee.name]);
       let result = {
@@ -626,7 +622,16 @@ const casters = {
           data: false,
           loc: null
         },
-        params: [cast(node.object, node), cast(node.property, node)],
+        params: [
+          (function() {
+            let p = cast(node.object, node);
+            if (p.type === "MustacheStatement") {
+              p.type = "SubExpression";
+            }
+            return p;
+          })(),
+          cast(node.property, node)
+        ],
         hash: {
           type: "Hash",
           pairs: [],
@@ -841,7 +846,7 @@ const casters = {
     };
   },
   TemplateLiteral(node, parent) {
-    let expressions = node.expressions;
+    let expressions = node.expressions.slice(0);
     let quasis = node.quasis;
     let parts = [];
     quasis.forEach(q => {
@@ -877,6 +882,35 @@ const casters = {
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
 
+    function hasInlineExpression(exp) {
+      const simpleTypes = [
+        "Identifier",
+        "CallExpression",
+        "BinaryExpression",
+        "LogicalExpression",
+        "StringLiteral",
+        "NumericLiteral",
+        "BooleanLiteral",
+        "UndefinedLiteral"
+      ];
+      if (exp.left.type === "Identifier") {
+        let isProp = isDefinedProperty(exp.left.name);
+        if (isProp && !simpleTypes.includes(isProp.type)) {
+          return false;
+        }
+      }
+      if (exp.right.type === "Identifier") {
+        let isProp = isDefinedProperty(exp.right.name);
+        if (isProp && !simpleTypes.includes(isProp.type)) {
+          return false;
+        }
+      }
+      return (
+        simpleTypes.includes(exp.left.type) &&
+        simpleTypes.includes(exp.right.type)
+      );
+    }
+
     if (
       hasTypes(expression, [
         "SequenceExpression",
@@ -889,18 +923,37 @@ const casters = {
       ])
     ) {
       return cast(expression, node);
-    } else if (node.expression.type === "LogicalExpression") {
-      return addASTNodeStrips({
-        type: "BlockStatement",
-        path: operatorToPath(
-          expression.operator === "&&" ? "if" : expression.operator
-        ),
-        params: [cast(expression.left, expression)],
-        loc: expression.loc,
-        inverse: null,
-        hash: bHash(),
-        program: cast(expression.right, expression)
-      });
+    } else if (
+      node.expression.type === "LogicalExpression" ||
+      node.expression.type === "BinaryExpression"
+    ) {
+      if (hasInlineExpression(node.expression)) {
+        return addASTNodeStrips({
+          type: "MustacheStatement",
+          loc: node.loc,
+          escaped: true,
+          path: operatorToPath(
+            expression.operator === "&&" ? "if" : expression.operator
+          ),
+          params: [
+            cast(expression.left, expression),
+            cast(expression.right, expression)
+          ],
+          hash: bHash()
+        });
+      } else if (node.expression.type === "LogicalExpression") {
+        return addASTNodeStrips({
+          type: "BlockStatement",
+          path: operatorToPath(
+            expression.operator === "&&" ? "if" : expression.operator
+          ),
+          params: [cast(expression.left, expression)],
+          loc: expression.loc,
+          inverse: null,
+          hash: bHash(),
+          program: cast(expression.right, expression)
+        });
+      }
     }
     let result = {
       type: "MustacheStatement",
@@ -1045,6 +1098,7 @@ const casters = {
         "ConditionalExpression",
         "ObjectProperty",
         "SequenceExpression",
+        "LogicalExpression",
         "ArrayExpression",
         "VariableDeclarator"
       ])

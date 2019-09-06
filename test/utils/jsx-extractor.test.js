@@ -199,7 +199,38 @@ it("support external onClick", () => {
     template: '<img {{on "click" @onClick}} />'
   });
 });
-
+it("supporty creepy jsx", () => {
+  const input = `const Animal = ({ id, name, legCount, isFriendly }) => (
+    <li> - {toString(legCount) || '?'} {legCount === undefined && isFriendly === undefined && ' - Not enough data!'} </li>
+  )`;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression:
+      '<li> - {{or (toString @legCount) "?"}} {{if (and (eq @legCount undefined) (eq @isFriendly undefined)) " - Not enough data!"}} </li>'
+  });
+});
+it("suport creepy template literals vars", () => {
+  const input = "const Animal = ({ id }) => (<a href={`url${id}`}></a>)";
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: '<a href={{concat "url" @id ""}}></a>'
+  });
+});
+it("suport creepy complex jsx", () => {
+  const input = `
+  const Animal = () => {
+    return <li>{hasNotEnoughData && ' - Not enough data!'}</li>;
+  }
+  `;
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression:
+      '<li>{{if this.hasNotEnoughData " - Not enough data!"}}</li>'
+  });
+});
+it("support computed object keys access", () => {
+  const input = `export default function template(key) { return <li>{{ true: 'Friendly'}[key]}</li> };`;
+  assert(extractJSXComponents(input), {
+    template: '<li>{{get (hash true="Friendly") @key}}</li>'
+  });
+});
 it("support optional actions", () => {
   const input = `<img onClick={optional(onClick)} />`;
   assert(extractJSXComponents(input), {
