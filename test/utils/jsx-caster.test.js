@@ -92,10 +92,7 @@ it("can handle complex conditions with fragments", () => {
 
 it("can assign component props", () => {
   const input = `(<LogoutButton onClick={this.onClick} />);`;
-  assert(
-    toHBS(input),
-    "<LogoutButton @onClick={{this.onClick}} />"
-  );
+  assert(toHBS(input), "<LogoutButton @onClick={{this.onClick}} />");
 });
 
 it("keep dom attrs", () => {
@@ -210,10 +207,7 @@ it("support hashes", () => {
 
 it("support hashes as subparams", () => {
   const input = `(<MyComponent data={{name: { value: 42 }}} />);`;
-  assert(
-    toHBS(input),
-    "<MyComponent @data={{hash name=(hash value=42)}} />"
-  );
+  assert(toHBS(input), "<MyComponent @data={{hash name=(hash value=42)}} />");
 });
 
 it("support strings as hash keys", () => {
@@ -239,10 +233,7 @@ it("support nested arrays", () => {
 
 it("support template strings using concat", () => {
   const input = "(<MyComponent name={`foo${bar}1`} />);";
-  assert(
-    toHBS(input),
-    '<MyComponent @name={{concat "foo" this.bar "1"}} />'
-  );
+  assert(toHBS(input), '<MyComponent @name={{concat "foo" this.bar "1"}} />');
 });
 
 it("support string concatination", () => {
@@ -281,10 +272,7 @@ it("support modifiers for DOM elements", () => {
 });
 it("support modifiers for Components elements", () => {
   const input = '(<MyComponent mod-style={{color: "face8d"}} />);';
-  assert(
-    toHBS(input),
-    '<MyComponent {{style (hash color="face8d")}} />'
-  );
+  assert(toHBS(input), '<MyComponent {{style (hash color="face8d")}} />');
 });
 it("support array as modifier argument", () => {
   const input = "(<MyComponent mod-style={[1]} />);";
@@ -316,32 +304,50 @@ it("support basic yield", () => {
 });
 it("support basic props mapping with array fn", () => {
   const input = `(<ul>{props.todos.map(todo => <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />)}</ul>);`;
-  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>");
+  assert(
+    toHBS(input),
+    "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>"
+  );
 });
 it("support basic props mapping with array fn as return", () => {
   const input = `(<ul>{this.props.todos.map(todo => { return <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />})}</ul>);`;
-  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>");
+  assert(
+    toHBS(input),
+    "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>"
+  );
 });
 it("support basic props mapping with true fn", () => {
   const input = `(<ul>{this.props.todos.map(function(todo){ return <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />})}</ul>);`;
-  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>");
+  assert(
+    toHBS(input),
+    "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} />{{/each}}</ul>"
+  );
 });
 it("support basic props mapping with true fn and multiple returns", () => {
   const input = `(<ul>{this.props.todos.map(function(todo){ return <><TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} /><div></div></>})}</ul>);`;
-  assert(toHBS(input), "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} /><div></div>{{/each}}</ul>");
+  assert(
+    toHBS(input),
+    "<ul>{{#each @todos as |todo|}}<TodoItem @key={{todo.id}} @todo={{todo}} @onToggle={{@onToggle}} /><div></div>{{/each}}</ul>"
+  );
 });
-it("support simple computed expressions", ()=>{
+it("support simple computed expressions", () => {
   const input = `<div>{items[name]}</div>`;
-  assert(toHBS(input), '<div>{{get this.items this.name}}</div>')
+  assert(toHBS(input), "<div>{{get this.items this.name}}</div>");
 });
-it("support complex computed expressions", ()=>{
+it("support complex computed expressions", () => {
   const input = `<div>{items[name][bar][baz]}</div>`;
-  assert(toHBS(input), '<div>{{get (get (get this.items this.name) this.bar) this.baz}}</div>')
+  assert(
+    toHBS(input),
+    "<div>{{get (get (get this.items this.name) this.bar) this.baz}}</div>"
+  );
 });
-it("support objec keys iterators", ()=>{
+it("support objec keys iterators", () => {
   const input = `<div>{Object.keys(colors).map(color => (<Swatch name={color} />))}</div>`;
-  assert(toHBS(input),'<div>{{#each-in colors as |color|}}<Swatch @name={{color}} />{{/each-in}}</div>')
-})
+  assert(
+    toHBS(input),
+    "<div>{{#each-in colors as |color|}}<Swatch @name={{color}} />{{/each-in}}</div>"
+  );
+});
 it("support basic types", () => {
   const input = `
   <div>{item.name}</div>
@@ -408,7 +414,6 @@ function assert(left, right) {
   expect(left).toEqual(right);
 }
 
-
 // do we need support this case?
 // function MyComponent({name}) {
 // 	let localName = "idea";
@@ -419,7 +424,7 @@ function assert(left, right) {
 // 	return (<div>{name} {localName} {localAge} {isEnabled} {localList} {external}</div>);
 // }
 
-// {{let (hash 
+// {{let (hash
 // 	localName = "idea"
 // 	localAge = 12
 // 	isEnabled = true

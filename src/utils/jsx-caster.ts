@@ -1,7 +1,7 @@
 var scopedVariables = [];
 var declaredVariables = [];
 
-import { patternMatch } from './hbs-utils';
+import { patternMatch } from "./hbs-utils";
 
 export function addASTNodeStrips(node) {
   if (node.type === "MustacheStatement" || node.type === "BlockStatement") {
@@ -15,7 +15,7 @@ export function addASTNodeStrips(node) {
     }
   }
   if (node.type === "MustacheStatement") {
-    if (node.path && node.path.type === 'SubExpression') {
+    if (node.path && node.path.type === "SubExpression") {
       node.params = node.path.params;
       node.path = node.path.path;
     }
@@ -163,7 +163,7 @@ function pathExpressionFromParam(node) {
     node.path.type === "PathExpression" &&
     node.path.original === "map";
 
-  if (isSub || node.original && node.original.endsWith(".map")) {
+  if (isSub || (node.original && node.original.endsWith(".map"))) {
     return {
       type: "PathExpression",
       original: "each",
@@ -387,7 +387,7 @@ const casters = {
   },
 
   CallExpression(node, parent) {
-    if (parent && parent.type === 'ObjectProperty') {
+    if (parent && parent.type === "ObjectProperty") {
       return {
         type: "SubExpression",
         hash: bHash(),
@@ -617,27 +617,22 @@ const casters = {
   MemberExpression(node, parent) {
     if (node.computed) {
       return {
-        "type": 'SubExpression',
-        "path": {
-          "type": "PathExpression",
-          "original": "get",
-          "this": false,
-          "parts": [
-            "get"
-          ],
-          "data": false,
-          "loc": null
+        type: "SubExpression",
+        path: {
+          type: "PathExpression",
+          original: "get",
+          this: false,
+          parts: ["get"],
+          data: false,
+          loc: null
         },
-        "params": [
-          cast(node.object, node),
-          cast(node.property, node)
-        ],
-        "hash": {
-          "type": "Hash",
-          "pairs": [],
-          "loc": null
+        params: [cast(node.object, node), cast(node.property, node)],
+        hash: {
+          type: "Hash",
+          pairs: [],
+          loc: null
         },
-        "loc": null
+        loc: null
       };
     }
     let items = flattenMemberExpression(node);
@@ -721,17 +716,23 @@ const casters = {
       prefix = "";
     }
 
-    //   if (isExternalProperty(node.name) && !hasInScope(node.name) && !isDefinedProperty(node.name) && (!node.name.startsWith('this.'))) {
-    //   return {
-    //     type: "PathExpression",
-    //     original: '@' + node.name,
-    //     this: false,
-    //     parts: [node.name],
-    //     data: true,
-    //     loc: node.loc
-    //   };
-    // }
-  
+    if (
+      !node.name.startsWith("this.") &&
+      !isDefinedProperty(node.name) &&
+      !hasInScope(node.name) &&
+      isExternalProperty(node.name) &&
+      node.name !== "children"
+    ) {
+      return {
+        type: "PathExpression",
+        original: "@" + node.name,
+        this: false,
+        parts: [node.name],
+        data: true,
+        loc: node.loc
+      };
+    }
+
     return {
       type: "PathExpression",
       original: prefix + node.name,
@@ -917,63 +918,69 @@ const casters = {
           "FunctionExpression"
         ])
       ) {
-
         // is Object.keys(data).map((item)=>...)
-      if (patternMatch(expression, {
-        callee: {
-          type: 'MemberExpression',
-          computed: false,
-          object: {
-            type: 'CallExpression',
+        if (
+          patternMatch(expression, {
             callee: {
               type: "MemberExpression",
-              object: {
-                type: 'Identifier',
-                name: 'Object'
-              },
               computed: false,
+              object: {
+                type: "CallExpression",
+                callee: {
+                  type: "MemberExpression",
+                  object: {
+                    type: "Identifier",
+                    name: "Object"
+                  },
+                  computed: false,
+                  property: {
+                    type: "Identifier",
+                    name: "keys"
+                  }
+                }
+              },
               property: {
-                type: 'Identifier',
-                name: 'keys'
+                type: "Identifier",
+                name: "map"
               }
             }
-          },
-          property: {
-            type: 'Identifier',
-            name: 'map'
-          }
+          })
+        ) {
+          // let params = [
+          //   cast(node.callee.object.arguments[0]),
+          //   cast(node.arguments[0].params[0], node.arguments[0])
+          // ];
+          return addASTNodeStrips({
+            type: "BlockStatement",
+            path: {
+              type: "PathExpression",
+              original: "each-in",
+              this: false,
+              parts: ["each-in"],
+              data: false
+            },
+            params: [
+              cast(
+                expression.callee.object.arguments[0],
+                expression.callee.object
+              )
+            ],
+            loc: expression.loc,
+            inverse: null,
+            hash: bHash(),
+            program: cast(expression.arguments[0], expression)
+          });
+        } else {
+          return addASTNodeStrips({
+            type: "BlockStatement",
+            path: pathExpressionFromParam(cast(expression, node)),
+            params: [cleanupBlockParam(cast(expression, node))],
+            loc: expression.loc,
+            inverse: null,
+            hash: bHash(),
+            program: cast(expression.arguments[0], expression)
+          });
         }
-      })) {
-        // let params = [
-        //   cast(node.callee.object.arguments[0]),
-        //   cast(node.arguments[0].params[0], node.arguments[0])
-        // ];
-        return addASTNodeStrips({
-          type: "BlockStatement",
-          path: {
-            type: 'PathExpression',
-            original: 'each-in',
-            this: false,
-            parts: ['each-in'],
-            data: false
-          },
-          params: [cast(expression.callee.object.arguments[0], expression.callee.object)],
-          loc: expression.loc,
-          inverse: null,
-          hash: bHash(),
-          program: cast(expression.arguments[0], expression)
-        });
-      } else {
-        return addASTNodeStrips({
-          type: "BlockStatement",
-          path: pathExpressionFromParam(cast(expression, node)),
-          params: [cleanupBlockParam(cast(expression, node))],
-          loc: expression.loc,
-          inverse: null,
-          hash: bHash(),
-          program: cast(expression.arguments[0], expression)
-        });
-      }
       } else {
         result.path = cast(expression, node);
         result.params = expression.arguments.map(arg =>
@@ -1062,7 +1069,7 @@ const casters = {
     let result = {
       type: "AttrNode",
       name: cast(node.name),
-      value: cast(node.value),
+      value: cast(node.value, node),
       loc: node.loc
     };
 
@@ -1070,8 +1077,8 @@ const casters = {
       parent &&
       parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
 
-    if (result.name === 'style' && result.value.type === 'MustacheStatement') {
-      result.name = 'mod-style';
+    if (result.name === "style" && result.value.type === "MustacheStatement") {
+      result.name = "mod-style";
     }
 
     if (result.name.startsWith("mod-")) {
@@ -1123,7 +1130,17 @@ const casters = {
               value: eventName,
               original: eventName
             },
-            result.value.path
+            patternMatch(node.value, {
+              type: "JSXExpressionContainer",
+              expression: {
+                type: "CallExpression"
+              }
+            })
+              ? (function() {
+                  result.value.type = "SubExpression";
+                  return result.value;
+                })()
+              : result.value.path
           ],
           hash: bHash(),
           loc: node.loc

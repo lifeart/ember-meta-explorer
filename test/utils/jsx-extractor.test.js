@@ -2,7 +2,10 @@
 /* eslint-env jest */
 /* eslint-env node */
 
-const { extractJSXComponents, extractComponentFromClassMethod } = require("../../dist/utils/jsx-extractor");
+const {
+  extractJSXComponents,
+  extractComponentFromClassMethod
+} = require("../../dist/utils/jsx-extractor");
 
 function assert(left, right) {
   expect(left).toEqual(right);
@@ -10,175 +13,174 @@ function assert(left, right) {
 
 it("can work with glimmerx template declaration", () => {
   const input = {
-    "type": "ClassMethod",
-    "start": 30,
-    "end": 80,
-    "loc": {
-      "start": {
-        "line": 2,
-        "column": 3
+    type: "ClassMethod",
+    start: 30,
+    end: 80,
+    loc: {
+      start: {
+        line: 2,
+        column: 3
       },
-      "end": {
-        "line": 4,
-        "column": 5
+      end: {
+        line: 4,
+        column: 5
       }
     },
-    "static": true,
-    "key": {
-      "type": "Identifier",
-      "start": 37,
-      "end": 45,
-      "loc": {
-        "start": {
-          "line": 2,
-          "column": 10
+    static: true,
+    key: {
+      type: "Identifier",
+      start: 37,
+      end: 45,
+      loc: {
+        start: {
+          line: 2,
+          column: 10
         },
-        "end": {
-          "line": 2,
-          "column": 18
+        end: {
+          line: 2,
+          column: 18
         },
-        "identifierName": "template"
+        identifierName: "template"
       },
-      "name": "template"
+      name: "template"
     },
-    "computed": false,
-    "kind": "method",
-    "id": null,
-    "generator": false,
-    "async": false,
-    "params": [],
-    "body": {
-      "type": "BlockStatement",
-      "start": 48,
-      "end": 80,
-      "loc": {
-        "start": {
-          "line": 2,
-          "column": 21
+    computed: false,
+    kind: "method",
+    id: null,
+    generator: false,
+    async: false,
+    params: [],
+    body: {
+      type: "BlockStatement",
+      start: 48,
+      end: 80,
+      loc: {
+        start: {
+          line: 2,
+          column: 21
         },
-        "end": {
-          "line": 4,
-          "column": 5
+        end: {
+          line: 4,
+          column: 5
         }
       },
-      "body": [
+      body: [
         {
-          "type": "ReturnStatement",
-          "start": 55,
-          "end": 74,
-          "loc": {
-            "start": {
-              "line": 3,
-              "column": 5
+          type: "ReturnStatement",
+          start: 55,
+          end: 74,
+          loc: {
+            start: {
+              line: 3,
+              column: 5
             },
-            "end": {
-              "line": 3,
-              "column": 24
+            end: {
+              line: 3,
+              column: 24
             }
           },
-          "argument": {
-            "type": "JSXElement",
-            "start": 62,
-            "end": 73,
-            "loc": {
-              "start": {
-                "line": 3,
-                "column": 12
+          argument: {
+            type: "JSXElement",
+            start: 62,
+            end: 73,
+            loc: {
+              start: {
+                line: 3,
+                column: 12
               },
-              "end": {
-                "line": 3,
-                "column": 23
+              end: {
+                line: 3,
+                column: 23
               }
             },
-            "openingElement": {
-              "type": "JSXOpeningElement",
-              "start": 62,
-              "end": 67,
-              "loc": {
-                "start": {
-                  "line": 3,
-                  "column": 12
+            openingElement: {
+              type: "JSXOpeningElement",
+              start: 62,
+              end: 67,
+              loc: {
+                start: {
+                  line: 3,
+                  column: 12
                 },
-                "end": {
-                  "line": 3,
-                  "column": 17
+                end: {
+                  line: 3,
+                  column: 17
                 }
               },
-              "name": {
-                "type": "JSXIdentifier",
-                "start": 63,
-                "end": 66,
-                "loc": {
-                  "start": {
-                    "line": 3,
-                    "column": 13
+              name: {
+                type: "JSXIdentifier",
+                start: 63,
+                end: 66,
+                loc: {
+                  start: {
+                    line: 3,
+                    column: 13
                   },
-                  "end": {
-                    "line": 3,
-                    "column": 16
+                  end: {
+                    line: 3,
+                    column: 16
                   }
                 },
-                "name": "div"
+                name: "div"
               },
-              "attributes": [],
-              "selfClosing": false
+              attributes: [],
+              selfClosing: false
             },
-            "closingElement": {
-              "type": "JSXClosingElement",
-              "start": 67,
-              "end": 73,
-              "loc": {
-                "start": {
-                  "line": 3,
-                  "column": 17
+            closingElement: {
+              type: "JSXClosingElement",
+              start: 67,
+              end: 73,
+              loc: {
+                start: {
+                  line: 3,
+                  column: 17
                 },
-                "end": {
-                  "line": 3,
-                  "column": 23
+                end: {
+                  line: 3,
+                  column: 23
                 }
               },
-              "name": {
-                "type": "JSXIdentifier",
-                "start": 69,
-                "end": 72,
-                "loc": {
-                  "start": {
-                    "line": 3,
-                    "column": 19
+              name: {
+                type: "JSXIdentifier",
+                start: 69,
+                end: 72,
+                loc: {
+                  start: {
+                    line: 3,
+                    column: 19
                   },
-                  "end": {
-                    "line": 3,
-                    "column": 22
+                  end: {
+                    line: 3,
+                    column: 22
                   }
                 },
-                "name": "div"
+                name: "div"
               }
             },
-            "children": []
+            children: []
           }
         }
       ],
-      "directives": []
+      directives: []
     }
   };
 
-
-  assert(extractComponentFromClassMethod({ node: input }), '<div></div>');
+  assert(extractComponentFromClassMethod({ node: input }), "<div></div>");
 });
 
 it("support children property as yield", () => {
   const input = `export function template({children}) { return <div>{children}</div>};`;
   assert(extractJSXComponents(input), {
-    template: '<div>{{this.children}}</div>',
-    template_declarated: '<div>{{yield}}</div>'
+    template: "<div>{{this.children}}</div>",
+    template_declarated: "<div>{{yield}}</div>"
   });
 });
 
 it("support children property as yield", () => {
   const input = `export function template(any) { return <div>{any.children}</div>};`;
   assert(extractJSXComponents(input), {
-    template: '<div>{{this.any.children}}</div>',
-    template_declarated: '<div>{{yield}}</div>'
+    template: "<div>{{this.any.children}}</div>",
+    template_declarated: "<div>{{yield}}</div>"
   });
 });
 
@@ -188,10 +190,32 @@ it("support style objects via style modifier", () => {
     root: '<div {{style (hash color="red")}}></div>'
   });
 });
+
+it("support external onClick", () => {
+  const input = `export function template({onClick}) {
+    return   <img onClick={onClick} />;
+}`;
+  assert(extractJSXComponents(input), {
+    template: '<img {{on "click" @onClick}} />'
+  });
+});
+
+it("support optional actions", () => {
+  const input = `<img onClick={optional(onClick)} />`;
+  assert(extractJSXComponents(input), {
+    root: '<img {{on "click" (optional onClick)}} />'
+  });
+});
+it("support optional external actions", () => {
+  const input = `export default function template({onClick}) { return <img onClick={optional(onClick)} /> }`;
+  assert(extractJSXComponents(input), {
+    template: '<img {{on "click" (optional @onClick)}} />'
+  });
+});
 it("support style modifier over components", () => {
   const input = `<ConfLogo style={{width:'20px', 'background-color': 'red'}} />`;
   assert(extractJSXComponents(input), {
-    root: '<div {{style (hash color="red")}}></div>'
+    root: '<ConfLogo {{style (hash width="20px" background-color="red")}} />'
   });
 });
 
@@ -318,8 +342,8 @@ it("can support react sketchapp examples", () => {
   
   `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<View @name={{this.name}} {{style (hash height=96 width=96 margin=4 backgroundColor=this.hex padding=8)}}> <Text @name=\"Swatch Name\" {{style (hash color=(textColor hex) fontWeight=\"bold\")}}>{{this.name}}</Text> <Text @name=\"Swatch Hex\" {{style (hash color=(textColor hex))}}>{{this.hex}}</Text> </View>",
-    ArrowFunctionExpression_declarated: "<View @name={{@name}} {{style (hash height=96 width=96 margin=4 backgroundColor=@hex padding=8)}}> <Text @name=\"Swatch Name\" {{style (hash color=(textColor hex) fontWeight=\"bold\")}}>{{@name}}</Text> <Text @name=\"Swatch Hex\" {{style (hash color=(textColor hex))}}>{{@hex}}</Text> </View>"
+    ArrowFunctionExpression:
+      '<View @name={{@name}} {{style (hash height=96 width=96 margin=4 backgroundColor=@hex padding=8)}}> <Text @name="Swatch Name" {{style (hash color=(textColor @hex) fontWeight="bold")}}>{{@name}}</Text> <Text @name="Swatch Hex" {{style (hash color=(textColor @hex))}}>{{@hex}}</Text> </View>'
   });
 });
 it("can handle basic string declarations", () => {
@@ -368,7 +392,7 @@ it("can handle basic local declarations", () => {
     App:
       "<h1>{{this.a}}{{this.b}}{{this.c}}{{this.d}}{{this.e}} and {{hash aa=this.a bb=this.b cc=this.c dd=this.d ee=this.e}}</h1>",
     App_declarated:
-      '{{#let (hash a=42 b=\"1\" c=(array 1 false) d=true e=(hash name=12)) as |ctx|}}<h1>{{ctx.a}}{{ctx.b}}{{ctx.c}}{{ctx.d}}{{ctx.e}} and {{hash aa=ctx.a bb=ctx.b cc=ctx.c dd=ctx.d ee=ctx.e}}</h1>{{/let}}'
+      '{{#let (hash a=42 b="1" c=(array 1 false) d=true e=(hash name=12)) as |ctx|}}<h1>{{ctx.a}}{{ctx.b}}{{ctx.c}}{{ctx.d}}{{ctx.e}} and {{hash aa=ctx.a bb=ctx.b cc=ctx.c dd=ctx.d ee=ctx.e}}</h1>{{/let}}'
   });
 });
 it("can handle spread as arguments for arrow function", () => {
@@ -378,8 +402,7 @@ it("can handle spread as arguments for arrow function", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.value}}</h1>",
-    ArrowFunctionExpression_declarated: "<h1>{{@value}}</h1>"
+    ArrowFunctionExpression: "<h1>{{@value}}</h1>"
   });
   // App.. = <h1>{{@value}}</h1>
 });
@@ -392,7 +415,8 @@ it("can handle basic array join", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(join @value \"a\")) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      '{{#let (hash result=(join @value "a")) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}'
   });
 });
 it("can handle basic array includes", () => {
@@ -404,7 +428,8 @@ it("can handle basic array includes", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(contains @value \"a\")) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      '{{#let (hash result=(contains @value "a")) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}'
   });
 });
 it("can handle basic array reverse", () => {
@@ -416,7 +441,8 @@ it("can handle basic array reverse", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(reverse @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      "{{#let (hash result=(reverse @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
 it("can handle basic array reduce", () => {
@@ -428,7 +454,8 @@ it("can handle basic array reduce", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(reduce @reducer @value 0)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      "{{#let (hash result=(reduce @reducer @value 0)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
 it("can handle basic array map", () => {
@@ -440,7 +467,8 @@ it("can handle basic array map", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(map @reducer @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      "{{#let (hash result=(map @reducer @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
 it("can handle basic array slice", () => {
@@ -452,7 +480,8 @@ it("can handle basic array slice", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(slice 0 12 @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      "{{#let (hash result=(slice 0 12 @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
 it("can handle basic array append", () => {
@@ -464,7 +493,8 @@ it("can handle basic array append", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(append @value 12)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      "{{#let (hash result=(append @value 12)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
 it("can handle basic array filter", () => {
@@ -476,7 +506,8 @@ it("can handle basic array filter", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(filter @reducer @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      "{{#let (hash result=(filter @reducer @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
 it("can handle complex path array filter", () => {
@@ -488,7 +519,8 @@ it("can handle complex path array filter", () => {
 	  `;
   assert(extractJSXComponents(input), {
     ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated: "{{#let (hash result=(filter @reducer @value.name)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    ArrowFunctionExpression_declarated:
+      "{{#let (hash result=(filter @reducer @value.name)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
 it("can handle spread as arguments for named function", () => {
@@ -498,8 +530,7 @@ it("can handle spread as arguments for named function", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    Headline: "<h1>{{this.value}}</h1>",
-    Headline_declarated: "<h1>{{@value}}</h1>"
+    Headline: "<h1>{{@value}}</h1>"
   });
 
   // App.. = <h1>{{@value}}</h1>
@@ -518,10 +549,11 @@ it("can handle local variables composition", () => {
     return <h1>{filteredResult}</h1>;
   };
   `;
-assert(extractJSXComponents(input), {
-  ArrowFunctionExpression: "<h1>{{this.filteredResult}}</h1>",
-  ArrowFunctionExpression_declarated: "{{#let (hash filteredResult=(filter @matcher (map @reducer @value.name))) as |ctx|}}<h1>{{ctx.filteredResult}}</h1>{{/let}}"
-});
+  assert(extractJSXComponents(input), {
+    ArrowFunctionExpression: "<h1>{{this.filteredResult}}</h1>",
+    ArrowFunctionExpression_declarated:
+      "{{#let (hash filteredResult=(filter @matcher (map @reducer @value.name))) as |ctx|}}<h1>{{ctx.filteredResult}}</h1>{{/let}}"
+  });
 });
 it("can handle spread for this.props", () => {
   const input = `
@@ -531,8 +563,7 @@ it("can handle spread for this.props", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    Headline: "<h1>{{this.value}}</h1>",
-    Headline_declarated: "<h1>{{@value}}</h1>"
+    Headline: "<h1>{{@value}}</h1>"
   });
 });
 it("can handle listed call chains", () => {
@@ -546,14 +577,17 @@ it("can handle listed call chains", () => {
 	  `;
   assert(extractJSXComponents(input), {
     Headline: "<h1>{{this.result}}</h1>",
-    Headline_declarated: "{{#let (hash result=(filter @dataFilter (reduce @dataReducer (map @dataMapper @data) 0))) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
+    Headline_declarated:
+      "{{#let (hash result=(filter @dataFilter (reduce @dataReducer (map @dataMapper @data) 0))) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
 it("can handle concatinated attribute values", () => {
-  const input = 'function Headline({foo, bar}) { let className = `${foo ? "foo" : ""} ${bar}`; return <h1 class={className}>Hi</h1>;}';
+  const input =
+    'function Headline({foo, bar}) { let className = `${foo ? "foo" : ""} ${bar}`; return <h1 class={className}>Hi</h1>;}';
   assert(extractJSXComponents(input), {
     Headline: "<h1 class={{this.className}}>Hi</h1>",
-    Headline_declarated: "{{#let (hash className=(concat \"\" (if @foo \"foo\" \"\") \" \" @bar \"\")) as |ctx|}}<h1 class={{ctx.className}}>Hi</h1>{{/let}}"
+    Headline_declarated:
+      '{{#let (hash className=(concat "" (if @foo "foo" "") " " @bar "")) as |ctx|}}<h1 class={{ctx.className}}>Hi</h1>{{/let}}'
   });
 });
 it("can handle jsx subdeclarations", () => {
@@ -578,7 +612,8 @@ it("can support undefined", () => {
 		`;
   assert(extractJSXComponents(input), {
     Headline: "<h1>{{this.tag}}</h1>",
-    Headline_declarated: "{{#let (hash tag=undefined) as |ctx|}}<h1>{{ctx.tag}}</h1>{{/let}}"
+    Headline_declarated:
+      "{{#let (hash tag=undefined) as |ctx|}}<h1>{{ctx.tag}}</h1>{{/let}}"
   });
 });
 it("can support null", () => {
@@ -590,7 +625,8 @@ it("can support null", () => {
 		`;
   assert(extractJSXComponents(input), {
     Headline: "<h1>{{this.tag}}</h1>",
-    Headline_declarated: "{{#let (hash tag=null) as |ctx|}}<h1>{{ctx.tag}}</h1>{{/let}}"
+    Headline_declarated:
+      "{{#let (hash tag=null) as |ctx|}}<h1>{{ctx.tag}}</h1>{{/let}}"
   });
 });
 it("can handle jsx subdeclarations in fragments", () => {
@@ -645,10 +681,12 @@ it("can handle inline arrays in fragments", () => {
 
  }
   `;
+
   assert(extractJSXComponents(input), {
-    "ArrowFunctionExpression": "<li class=\"company\"><Company @company={{this.company}} /></li>",
-    "ArrowFunctionExpression_declarated": "<li class=\"company\"><Company @company={{@company}} /></li>",
-    "template": "<ul class=\"companies\">{{#each (array (hash name=\"Widgets\" contacts=(array (hash name=\"Chad\" email=\"345@gmail.com\" phone=\"123\")))) as |company|}}<li class=\"company\"><Company @company={{company}} /></li>{{/each}}</ul>",
+    ArrowFunctionExpression:
+      '<li class="company"><Company @company={{@company}} /></li>',
+    template:
+      '<ul class="companies">{{#each (array (hash name="Widgets" contacts=(array (hash name="Chad" email="345@gmail.com" phone="123")))) as |company|}}<li class="company"><Company @company={{company}} /></li>{{/each}}</ul>'
   });
 });
 
@@ -667,9 +705,10 @@ it("can handle inline arrays", () => {
  }
   `;
   assert(extractJSXComponents(input), {
-    "ArrowFunctionExpression": "<li class=\"company\"><Company @company={{this.company}} /></li>",
-    "ArrowFunctionExpression_declarated": "<li class=\"company\"><Company @company={{@company}} /></li>",
-    "template": "<ul class=\"companies\">{{#each (array (hash name=\"Widgets\" contacts=(array (hash name=\"Chad\" email=\"345@gmail.com\" phone=\"123\")))) as |company|}}<li class=\"company\"><Company @company={{company}} /></li>{{/each}}</ul>",
+    ArrowFunctionExpression:
+      '<li class="company"><Company @company={{@company}} /></li>',
+    template:
+      '<ul class="companies">{{#each (array (hash name="Widgets" contacts=(array (hash name="Chad" email="345@gmail.com" phone="123")))) as |company|}}<li class="company"><Company @company={{company}} /></li>{{/each}}</ul>'
   });
 });
 
@@ -760,7 +799,8 @@ it("can handle complexConditional templates", () => {
     }
   `;
   assert(extractJSXComponents(input), {
-    MyTemplate: "<span>{{#if (gt this.a this.b)}}<div></div>{{else}}<h1></h1>{{/if}}</span>",
+    MyTemplate:
+      "<span>{{#if (gt this.a this.b)}}<div></div>{{else}}<h1></h1>{{/if}}</span>",
     caseOne: "<div></div>",
     caseTwo: "<h1></h1>"
   });
@@ -779,19 +819,21 @@ it("can handle complexSingleConditional fragment templates", () => {
   });
 });
 
-it("can handle paths from args", ()=> {
+it("can handle paths from args", () => {
   const input = `
   function Mailbox({unreadMessages}) {
     return (<div><h1>Hi</h1>{unreadMessages.length > 0 && <h2>You have {unreadMessages.length}</h2>}</div>);
   };
   `;
   assert(extractJSXComponents(input), {
-    Mailbox: "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
-    Mailbox_declarated: "<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>You have {{@unreadMessages.length}}</h2>{{/if}}</div>"
+    Mailbox:
+      "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
+    Mailbox_declarated:
+      "<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>You have {{@unreadMessages.length}}</h2>{{/if}}</div>"
   });
 });
 
-it("can handle paths from local vars", ()=> {
+it("can handle paths from local vars", () => {
   const input = `
   function Mailbox({unreadMessages}) {
     let user = { name: "mike" };
@@ -799,20 +841,24 @@ it("can handle paths from local vars", ()=> {
   };
   `;
   assert(extractJSXComponents(input), {
-    Mailbox: "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
-    Mailbox_declarated: "{{#let (hash user=(hash name=\"mike\")) as |ctx|}}<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>{{ctx.user.name}} You have {{@unreadMessages.length}}</h2>{{/if}}</div>{{/let}}"
+    Mailbox:
+      "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
+    Mailbox_declarated:
+      '{{#let (hash user=(hash name="mike")) as |ctx|}}<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>{{ctx.user.name}} You have {{@unreadMessages.length}}</h2>{{/if}}</div>{{/let}}'
   });
 });
 
-it("can handle paths from context", ()=> {
+it("can handle paths from context", () => {
   const input = `
   function Mailbox({unreadMessages}) {
     return (<div><h1>Hi</h1>{unreadMessages.length > 0 && <h2>{this.user.name} You have {unreadMessages.length}</h2>}</div>);
   };
   `;
   assert(extractJSXComponents(input), {
-    Mailbox: "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
-    Mailbox_declarated: "<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{@unreadMessages.length}}</h2>{{/if}}</div>"
+    Mailbox:
+      "<div><h1>Hi</h1>{{#if (gt this.unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{this.unreadMessages.length}}</h2>{{/if}}</div>",
+    Mailbox_declarated:
+      "<div><h1>Hi</h1>{{#if (gt @unreadMessages.length 0)}}<h2>{{this.user.name}} You have {{@unreadMessages.length}}</h2>{{/if}}</div>"
   });
 });
 
@@ -825,7 +871,8 @@ it("can handle default assign cases", () => {
   `;
   assert(extractJSXComponents(input), {
     Mailbox: "<div>{{this.name}}</div>",
-    Mailbox_declarated: "{{#let (hash name=(or @unreadMessages 12)) as |ctx|}}<div>{{ctx.name}}</div>{{/let}}"
+    Mailbox_declarated:
+      "{{#let (hash name=(or @unreadMessages 12)) as |ctx|}}<div>{{ctx.name}}</div>{{/let}}"
   });
 });
 
@@ -838,7 +885,8 @@ it("can handle default ternary assign cases", () => {
   `;
   assert(extractJSXComponents(input), {
     Mailbox: "<div>{{this.name}}</div>",
-    Mailbox_declarated: "{{#let (hash name=(if (gt @unreadMessages 1) 4 5)) as |ctx|}}<div>{{ctx.name}}</div>{{/let}}"
+    Mailbox_declarated:
+      "{{#let (hash name=(if (gt @unreadMessages 1) 4 5)) as |ctx|}}<div>{{ctx.name}}</div>{{/let}}"
   });
 });
 
