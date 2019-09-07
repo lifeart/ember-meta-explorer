@@ -4,7 +4,7 @@
 
 const { print } = require("@glimmer/syntax");
 const { parseScriptFile } = require("../../dist/utils/js-utils");
-const { cast } = require("../../dist/utils/jsx-caster");
+const { cast, casterTrace } = require("../../dist/utils/jsx-caster");
 
 it("can hanldle simple tags", () => {
   const input = `(<div></div>);`;
@@ -42,6 +42,80 @@ it("can handle simple loops", () => {
 it("can hanldle ternary expressions", () => {
   const input = `(<div>{a ? b : c}</div>);`;
   assert(toHBS(input), "<div>{{if this.a this.b this.c}}</div>");
+});
+
+it("can handle ternary jsx and string", ()=>{
+  const input = `<div>{a ? <br /> : "HelloWorld"}</div>`;
+  assert(toHBS(input), '<div>{{#if this.a}}<br />{{else}}HelloWorld{{/if}}</div>');
+});
+
+it("can handle deep ternary jsx", ()=>{
+  const input = `<div>{a ? (b ? 1 : <br />) : "HelloWorld"}</div>`;
+  assert(toHBS(input), '<div>{{#if this.a}}{{#if this.b}}1{{else}}<br />{{/if}}{{else}}HelloWorld{{/if}}</div>');
+});
+
+it("can handle spread properties assign", ()=> {
+  const input = `<Cmp {...{ a, b, }} />`;
+  assert(toHBS(input), '<Cmp @a={{this.a}} @b={{this.b}} />');
+});
+
+it("can handle crreepy expressions #1", () => {
+  const input = `<div>{foo && <Cmp />}</div>`;
+  assert(toHBS(input), '<div>{{#if this.foo}}<Cmp />{{/if}}</div>');
+});
+
+it("can handle crreepy expressions #2", () => {
+  const input = `<div>{foo === somevalue && <Cmp />}</div>`;
+  assert(toHBS(input), '<div>{{#if (eq this.foo this.somevalue)}}<Cmp />{{/if}}</div>');
+});
+
+it("can handle crreepy expressions #3", () => {
+  const input = `<div>{!foo && <Cmp />}</div>`;
+  assert(toHBS(input), '<div>{{#if (not this.foo)}}<Cmp />{{/if}}</div>');
+});
+
+it("can handle crreepy expressions #4", () => {
+  const input = `<div>{foo !== somevalue && <Cmp />}</div>`;
+  assert(toHBS(input), '<div>{{#if (not-eq this.foo this.somevalue)}}<Cmp />{{/if}}</div>');
+});
+
+it("can handle crreepy expressions #5", () => {
+  const input = `<div>{arr.length > 0 && <Cmp />}</div>`;
+  assert(toHBS(input), '<div>{{#if (gt this.arr.length 0)}}<Cmp />{{/if}}</div>');
+});
+
+
+it("can handle crreepy expressions #6", () => {
+  const input = `<div>{arr.length === 0 && <Cmp />}</div>`;
+  assert(toHBS(input), '<div>{{#if (eq this.arr.length 0)}}<Cmp />{{/if}}</div>');
+});
+
+
+it("can handle crreepy expressions #7", () => {
+  const input = `<div>{foo ? <CmpA /> : <CmpB />}</div>`;
+  assert(toHBS(input), '<div>{{#if this.foo}}<CmpA />{{else}}<CmpB />{{/if}}</div>');
+});
+
+// it("can handle crreepy expressions #8", () => {
+//   const input = `<div>{{
+//     caseA: () => <CmpA />,
+//     caseB: () => <CmpB />,
+//     undefined: () => <CmpC />
+//   }[switchValue]()}</div>`;
+//   assert(toHBS(input), '<div>{{#if this.foo}}<CmpA />{{else}}<CmpB />{{/if}}</div>');
+// });
+
+it("can handle crreepy expressions #9", () => {
+  const input = `<div>{condA ? (
+    <CmpA />
+  ) : condB ? (
+    <CmpB />
+  ) : condC ? (
+    <CmpC />
+  ) : (
+    <CmpD />
+  )}</div>`;
+  assert(toHBS(input), '<div>{{#if this.condA}}<CmpA />{{else}}{{#if this.condB}}<CmpB />{{else}}{{#if this.condC}}<CmpC />{{else}}<CmpD />{{/if}}{{/if}}{{/if}}</div>');
 });
 
 it("can hanldle nested ternary expressions", () => {
@@ -406,8 +480,18 @@ function fromJSX(input) {
   );
 }
 
-function toHBS(input) {
-  return print(fromJSX(input)).trim();
+function toHBS(input, debug = false) {
+  if (debug) {
+    casterTrace(true);
+  }
+  let result = fromJSX(input);
+  if (debug) {
+    casterTrace(false);
+  }
+  if (debug) {
+    console.log(JSON.stringify(result));
+  }
+  return print(result).trim();
 }
 
 function assert(left, right) {

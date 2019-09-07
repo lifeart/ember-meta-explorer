@@ -3,7 +3,20 @@ var declaredVariables = [];
 
 import { patternMatch } from "./hbs-utils";
 
+var traceEnabled = false;
+var traceStack = [];
+export function casterTrace(state) {
+  if (state === false) {
+    console.log(traceStack.map((...items) => items.join(' ')).join("\n"));
+    traceStack = [];
+  }
+  traceEnabled = state;
+}
+
 export function addASTNodeStrips(node) {
+  if (traceEnabled) {
+    traceStack.push(['addASTNodeStrips', JSON.stringify(node)]);
+  }
   if (node.type === "MustacheStatement" || node.type === "BlockStatement") {
     const strip = { open: false, close: false };
     node.strip = strip;
@@ -29,6 +42,26 @@ export function addASTNodeStrips(node) {
       node.program.body = node.program.body.body;
     }
   }
+
+  function fixStringLiteralsInsideBody(body) {
+    body.forEach((el)=>{
+      if (el.type === 'StringLiteral') {
+        el.type = 'TextNode';
+        el.chars = el.original;
+        delete el.original;
+        delete el.value;
+      }
+    })
+  }
+  
+  if (node.program && node.program.body) {
+    fixStringLiteralsInsideBody(node.program.body);
+  }
+
+  if (node.inverse && node.inverse.body) {
+    fixStringLiteralsInsideBody(node.inverse.body);
+  }
+
   return node;
 }
 
@@ -57,9 +90,17 @@ function isDefinedProperty(varName) {
   }
 }
 
+function hasJSXInside(node) {
+  const strNode = JSON.stringify(node);
+  return strNode.includes('"JSXElement"') || strNode.includes('"JSXFragment"');
+}
+
 function hasComplexIdentifier(id) {
   if (!id) {
     return false;
+  }
+  if (hasJSXInside(id)) {
+    return true;
   }
   if (id.type === "JSXElement") {
     return true;
@@ -106,6 +147,7 @@ function operatorToPath(operator, parent = null) {
     ">": "gt",
     "==": "eq",
     "===": "eq",
+    "!": "not",
     "!=": "not-eq",
     "!==": "not-eq",
     "++": "inc",
@@ -189,6 +231,9 @@ export function cast(node, parent = null) {
   }
   const type = node.type;
   if (type in casters) {
+    if (traceEnabled) {
+      traceStack.push([`cast: ${node.type}`, `parent: ${parent ? parent.type : '-'}`]);
+    }
     const result = casters[type](node, parent);
     if (typeof result === "object" && result !== null) {
       Object.assign(result, {
@@ -251,7 +296,7 @@ const casters = {
     let hasComplexLeft = hasComplexIdentifier(node.consequent);
     let hasComplexRight = hasComplexIdentifier(node.alternate);
     if (hasComplexLeft || hasComplexRight) {
-      let result = addASTNodeStrips({
+      let result = {
         type: "BlockStatement",
         hash: bHash(),
         path: operatorToPath("if"),
@@ -277,7 +322,7 @@ const casters = {
               log: null
             }
           : null
-      });
+      };
 
       if (hasComplexLeft && hasComplexLeft !== true) {
         result.program.body = [hasComplexLeft];
@@ -294,7 +339,7 @@ const casters = {
         result.inverse = null;
       }
 
-      return result;
+      return addASTNodeStrips(result);
     }
 
     return addASTNodeStrips({
@@ -674,6 +719,15 @@ const casters = {
       loc: node.loc
     };
   },
+  UnaryExpression(node, parent) {
+    return {
+      type: "SubExpression",
+      path: operatorToPath(node.operator),
+      params: [cast(node.argument, node)],
+      loc: node.loc,
+      hash: bHash()
+    };
+  },
   LogicalExpression(node, parent) {
     return {
       type: "SubExpression",
@@ -691,6 +745,20 @@ const casters = {
         original: undefined,
         loc: node.loc
       };
+    }
+    if (parent && parent.type === 'JSXSpreadAttribute' && parent.argument.properties.some((prop) => prop.key === node)) {
+      return node.name;
+    } else if (parent && parent.type === 'JSXSpreadAttribute' && parent.argument.properties.some((prop) => prop.value === node)) {
+
+      return addASTNodeStrips({
+        type: "MustacheStatement",
+        loc: node.loc,
+        escaped: true,
+        path: this.Identifier(node, parent.argument.properties[0]),
+        params: [],
+        hash: bHash()
+      });
+      
     }
     if (
       parent &&
@@ -813,6 +881,18 @@ const casters = {
       }
     });
   },
+  ObjectProperty(node, parent) {
+    if (parent && parent.type === 'JSXSpreadAttribute') {
+      return {
+        type: "AttrNode",
+        name: '@' + cast(node.key, parent),
+        value: cast(node.value, parent),
+        loc: node.loc
+      };
+    } else {
+      return null;
+    }
+  },
   ArrayExpression(node, parent) {
     return addASTNodeStrips({
       type: hasTypes(parent, [
@@ -877,12 +957,25 @@ const casters = {
     let returns = node.body.filter(el => el.type === "ReturnStatement");
     if (returns.length) {
       return cast(returns[0].argument, returns[0]);
+    } else {
+      return {
+        type: "Template",
+        body: node.body.map((el => cast(el, node))),
+        blockParams: [],
+        loc: node.loc
+      };
     }
+  },
+  IfStatement(node, parent) {
+    //@todo
   },
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
 
     function hasInlineExpression(exp) {
+      if (hasJSXInside(exp)) {
+        return false;
+      }
       const simpleTypes = [
         "Identifier",
         "CallExpression",
@@ -1244,6 +1337,14 @@ const casters = {
     };
 
     head.attributes.forEach(attr => {
+      if (attr.type === 'JSXSpreadAttribute') {
+        if (attr.argument && attr.argument.type === 'ObjectExpression') {
+          attr.argument.properties.forEach((prop)=>{
+            newNode.attributes.push(cast(prop, attr));
+          });
+        }
+        return;
+      }
       if (attr.name.name === "as" && attr.name.type === "JSXIdentifier") {
         if (attr.value.type === "JSXExpressionContainer") {
           if (attr.value.expression.type === "SequenceExpression") {

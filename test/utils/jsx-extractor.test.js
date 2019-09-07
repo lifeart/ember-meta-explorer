@@ -993,6 +993,23 @@ it("can handle components with simple object state hook", () => {
   });
 });
 
+// @todo
+// it("can handle multiple returns", () => {
+//   const input = `function List({ list }) {
+//     if (!list) {
+//       return null;
+//     }
+//     if (!list.length) {
+//       return <p>Sorry, the list is empty.</p>;
+//     } else {
+//       return <p>Ok</p>;
+//     }
+//   }`;
+//   assert(extractJSXComponents(input), {
+//     ArrowFunctionExpression: "<h1>{{this.greeting12}}</h1>"
+//   });
+// });
+
 it("can handle components with simple array state hook", () => {
   const input = `
 	  const Headline = () => {
