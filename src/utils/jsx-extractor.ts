@@ -168,7 +168,13 @@ function jsxComponentExtractor() {
       if (node.body) {
         if (hasValidJSXEntryNode(node.body)) {
           cast(node);
-          addComponent("ArrowFunctionExpression", print(cast(node.body, node)));
+          let componentName = "ArrowFunctionExpression";
+          if (path.parent && path.parent.type === 'VariableDeclarator' && path.parent.id) {
+            if (path.parent.id.type === 'Identifier' && path.parent.init === path.node) {
+              componentName = path.parent.id.name;
+            }
+          }
+          addComponent(componentName, print(cast(node.body, node)));
         } else if (node.body.body && node.body.body.length) {
           let result = node.body.body.filter(
             el => el.type === "ReturnStatement"
@@ -176,9 +182,17 @@ function jsxComponentExtractor() {
           if (result.length) {
             const arg = result[0].argument;
             if (hasValidJSXEntryNode(arg)) {
+
+              let componentName = "ArrowFunctionExpression";
+              if (path.parent && path.parent.type === 'VariableDeclarator' && path.parent.id) {
+                if (path.parent.id.type === 'Identifier' && path.parent.init === path.node) {
+                  componentName = path.parent.id.name;
+                }
+              }
+
               cast(node);
               addComponent(
-                "ArrowFunctionExpression",
+                componentName,
                 print(cast(arg, result[0]))
               );
             }

@@ -204,14 +204,14 @@ it("supporty creepy jsx", () => {
     <li> - {toString(legCount) || '?'} {legCount === undefined && isFriendly === undefined && ' - Not enough data!'} </li>
   )`;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression:
+    Animal:
       '<li> - {{or (toString @legCount) "?"}} {{if (and (eq @legCount undefined) (eq @isFriendly undefined)) " - Not enough data!"}} </li>'
   });
 });
 it("suport creepy template literals vars", () => {
   const input = "const Animal = ({ id }) => (<a href={`url${id}`}></a>)";
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: '<a href={{concat "url" @id ""}}></a>'
+    Animal: '<a href={{concat "url" @id ""}}></a>'
   });
 });
 it("suport creepy complex jsx", () => {
@@ -221,7 +221,7 @@ it("suport creepy complex jsx", () => {
   }
   `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression:
+    Animal:
       '<li>{{if this.hasNotEnoughData " - Not enough data!"}}</li>'
   });
 });
@@ -308,7 +308,7 @@ it("can extract jsx from ArrowFunctionExpression", () => {
 	  `;
 
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>Hello from React</h1>"
+    data: "<h1>Hello from React</h1>"
   });
 });
 it("can extract jsx from FunctionExpression", () => {
@@ -330,7 +330,7 @@ it("can extract jsx from ArrowFunctionExpression, using return", () => {
 	  `;
 
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>Hello from React</h1>"
+    data: "<h1>Hello from React</h1>"
   });
 });
 
@@ -373,7 +373,7 @@ it("can support react sketchapp examples", () => {
   
   `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression:
+    Swatch:
       '<View @name={{@name}} {{style (hash height=96 width=96 margin=4 backgroundColor=@hex padding=8)}}> <Text @name="Swatch Name" {{style (hash color=(textColor @hex) fontWeight="bold")}}>{{@name}}</Text> <Text @name="Swatch Hex" {{style (hash color=(textColor @hex))}}>{{@hex}}</Text> </View>'
   });
 });
@@ -433,7 +433,7 @@ it("can handle spread as arguments for arrow function", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{@value}}</h1>"
+    Headline: "<h1>{{@value}}</h1>"
   });
   // App.. = <h1>{{@value}}</h1>
 });
@@ -445,8 +445,8 @@ it("can handle basic array join", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       '{{#let (hash result=(join @value "a")) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}'
   });
 });
@@ -458,8 +458,8 @@ it("can handle basic array includes", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       '{{#let (hash result=(contains @value "a")) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}'
   });
 });
@@ -471,8 +471,8 @@ it("can handle basic array reverse", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       "{{#let (hash result=(reverse @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
@@ -484,8 +484,8 @@ it("can handle basic array reduce", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       "{{#let (hash result=(reduce @reducer @value 0)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
@@ -497,8 +497,8 @@ it("can handle basic array map", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       "{{#let (hash result=(map @reducer @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
@@ -510,8 +510,8 @@ it("can handle basic array slice", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       "{{#let (hash result=(slice 0 12 @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
@@ -523,8 +523,8 @@ it("can handle basic array append", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       "{{#let (hash result=(append @value 12)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
@@ -536,8 +536,8 @@ it("can handle basic array filter", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       "{{#let (hash result=(filter @reducer @value)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
@@ -549,8 +549,8 @@ it("can handle complex path array filter", () => {
 		};
 	  `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.result}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.result}}</h1>",
+    Headline_declarated:
       "{{#let (hash result=(filter @reducer @value.name)) as |ctx|}}<h1>{{ctx.result}}</h1>{{/let}}"
   });
 });
@@ -581,8 +581,8 @@ it("can handle local variables composition", () => {
   };
   `;
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.filteredResult}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.filteredResult}}</h1>",
+    Headline_declarated:
       "{{#let (hash filteredResult=(filter @matcher (map @reducer @value.name))) as |ctx|}}<h1>{{ctx.filteredResult}}</h1>{{/let}}"
   });
 });
@@ -963,9 +963,9 @@ it("can handle components with state hook", () => {
   // {{/let}}
   // idea todo -> we can catch setGreeting and produce {{action (mut this.greeting)}}, or kinda
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression:
+    Headline:
       '<div><h1>{{this.greeting1}}</h1><input type="text" value={{this.greeting1}} {{on "change" this.handleChange}} /></div>',
-    ArrowFunctionExpression_declarated:
+    Headline_declarated:
       '{{#let (hash greeting1="Hello Function Component!") as |ctx|}}<div><h1>{{ctx.greeting1}}</h1><input type="text" value={{ctx.greeting1}} {{on "change" this.handleChange}} /></div>{{/let}}'
   });
 });
@@ -986,9 +986,9 @@ it("can handle components with simple object state hook", () => {
 	  `;
 
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression:
+    Headline:
       '<div><h1>{{this.greeting12}}</h1><input type="text" value={{this.greeting12}} {{on "change" this.handleChange}} /></div>',
-    ArrowFunctionExpression_declarated:
+    Headline_declarated:
       '{{#let (hash greeting12=(hash a=1 b="2" c=(array 1) d=false)) as |ctx|}}<div><h1>{{ctx.greeting12}}</h1><input type="text" value={{ctx.greeting12}} {{on "change" this.handleChange}} /></div>{{/let}}'
   });
 });
@@ -1024,8 +1024,38 @@ it("can handle components with simple array state hook", () => {
 	  `;
 
   assert(extractJSXComponents(input), {
-    ArrowFunctionExpression: "<h1>{{this.greeting12}}</h1>",
-    ArrowFunctionExpression_declarated:
+    Headline: "<h1>{{this.greeting12}}</h1>",
+    Headline_declarated:
       '{{#let (hash greeting12=(array 1 "2" false (hash name=1))) as |ctx|}}<h1>{{ctx.greeting12}}</h1>{{/let}}'
+  });
+});
+
+it("can handle random jsx from github #1", () => {
+  const input = `
+class Carousel extends React.Component{
+    render () {
+        let SlickDot = () => {
+            return ( this.props.imageList.length > 1 && this.props.showSlickDot? (    <ul className="slick-dot"> { this.props.imageList.map((item,index) => { return ( <li  className={this.state.isActived === index ? 'acitve' : ''} key={index} onClick={this.changeSlick.bind(this, index)}  ></li> ) }) } </ul> ) :  '')
+        }
+
+        return (
+            <div className={Style['carousel']}> <ul className="carousel-list"> { this.props.imageList.map((item,index) => { return (  <li  className={['carousel-item', this.state.isActived === index ? 'actived': ''].join(' ')}  key={index}>  { this.props.showCloseBtn && this.state.isActived === index? <span className="close-circle" onClick={this.delectPhoto.bind(this,index)}></span> : '' }  <img src={item} height="100%" width="100%"/>  </li> ) }) } { this.props.imageList.length > 1 ? <div><span className="pre-btn" type="left-circle" theme="outlined" onClick={this.slickPre.bind(this)}></span><span className="next-btn" type="right-circle" theme="outlined" onClick={this.slickNext.bind(this)}></span></div> : '' } <SlickDot /> </ul> </div>
+        )
+    }
+}
+
+  `;
+
+  let result = extractJSXComponents(input);
+  Object.keys(result).forEach((key)=>{
+    if (key.startsWith('ArrowFunctionExpression_')) {
+      result['ArrowFunctionExpression_'] = result[key];
+      delete result[key];
+    }
+  })
+  assert(result, {
+    ArrowFunctionExpression: "<li class={{if (eq this.state.isActived @index) \"acitve\" \"\"}} key={{@index}} {{on \"click\" (this.changeSlick.bind this @index)}}></li>",
+    ArrowFunctionExpression_: "<li class={{join (array \"carousel-item\" (if (eq this.state.isActived @index) \"actived\" \"\")) \" \"}} key={{@index}}>  {{#if (and @showCloseBtn (eq this.state.isActived @index))}}<span class=\"close-circle\" {{on \"click\" (this.delectPhoto.bind this @index)}}></span>{{else}}{{/if}}  <img src={{@item}} height=\"100%\" width=\"100%\" />  </li>",
+    render: "<div class={{get this.Style carousel}}> <ul class=\"carousel-list\"> {{#each @imageList as |item index|}}<li class={{join (array \"carousel-item\" (if (eq this.state.isActived index) \"actived\" \"\")) \" \"}} key={{index}}>  {{#if (and @showCloseBtn (eq this.state.isActived index))}}<span class=\"close-circle\" {{on \"click\" (this.delectPhoto.bind this index)}}></span>{{else}}{{/if}}  <img src={{item}} height=\"100%\" width=\"100%\" />  </li>{{/each}} {{#if (gt @imageList.length 1)}}<div><span class=\"pre-btn\" type=\"left-circle\" theme=\"outlined\" {{on \"click\" (this.slickPre.bind this)}}></span><span class=\"next-btn\" type=\"right-circle\" theme=\"outlined\" {{on \"click\" (this.slickNext.bind this)}}></span></div>{{else}}{{/if}} <SlickDot /> </ul> </div>"
   });
 });

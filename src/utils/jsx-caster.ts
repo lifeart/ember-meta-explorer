@@ -171,6 +171,13 @@ function operatorToPath(operator, parent = null) {
   };
 }
 
+function maybeMustacheStatementToSubExpression(node) {
+  if (node.type === "MustacheStatement") {
+    node.type = "SubExpression";
+  }
+  return node;
+}
+
 function cleanupBlockParam(node) {
   if (node.type === "SubExpression") {
     const param = node.params[node.params.length - 1];
@@ -454,8 +461,8 @@ const casters = {
               loc: node.loc,
               path: cast(node.callee.property, node),
               params: [
-                cast(node.callee.object, node.callee),
-                cast(node.arguments[0], node)
+                maybeMustacheStatementToSubExpression(cast(node.callee.object, node.callee)),
+                maybeMustacheStatementToSubExpression(cast(node.arguments[0], node))
               ]
             };
           } else if (
@@ -470,8 +477,8 @@ const casters = {
               loc: node.loc,
               path: cast(node.callee.property, node),
               params: [
-                cast(node.callee.object, node.callee),
-                cast(node.arguments[0], node)
+                maybeMustacheStatementToSubExpression(cast(node.callee.object, node.callee)),
+                maybeMustacheStatementToSubExpression(cast(node.arguments[0], node))
               ]
             };
           } else if (
@@ -483,7 +490,7 @@ const casters = {
               hash: bHash(),
               loc: node.loc,
               path: cast(node.callee.property, node),
-              params: [cast(node.callee.object, node.callee)]
+              params: [maybeMustacheStatementToSubExpression(cast(node.callee.object, node.callee))]
             };
           } else if (node.callee.property.name === "reduce") {
             let params = [
@@ -498,7 +505,7 @@ const casters = {
               hash: bHash(),
               loc: node.loc,
               path: cast(node.callee.property, node),
-              params
+              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
             };
           } else if (node.callee.property.name === "map") {
             let params = [
@@ -510,7 +517,7 @@ const casters = {
               hash: bHash(),
               loc: node.loc,
               path: cast(node.callee.property, node),
-              params
+              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
             };
           } else if (
             node.callee.property.name === "slice" &&
@@ -526,7 +533,7 @@ const casters = {
               hash: bHash(),
               loc: node.loc,
               path: cast(node.callee.property, node),
-              params
+              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
             };
           } else if (
             node.callee.property.name === "append" &&
@@ -541,7 +548,7 @@ const casters = {
               hash: bHash(),
               loc: node.loc,
               path: cast(node.callee.property, node),
-              params
+              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
             };
           } else if (
             node.callee.property.name === "filter" &&
@@ -556,7 +563,7 @@ const casters = {
               hash: bHash(),
               loc: node.loc,
               path: cast(node.callee.property, node),
-              params
+              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
             };
           }
         }
@@ -576,7 +583,7 @@ const casters = {
         hash: bHash(),
         loc: node.loc,
         path: cast(node.callee, node),
-        params: node.arguments.map(arg => cast(arg, node))
+        params: node.arguments.map(arg => maybeMustacheStatementToSubExpression(cast(arg, node)))
       };
       decreaseScope([node.callee.name]);
       return result;
@@ -903,7 +910,7 @@ const casters = {
       ])
         ? "SubExpression"
         : "MustacheStatement",
-      params: node.elements.map(el => cast(el, node)),
+      params: node.elements.map(el => maybeMustacheStatementToSubExpression(cast(el, node))),
       loc: node.loc,
       escaped: true,
       hash: bHash(),

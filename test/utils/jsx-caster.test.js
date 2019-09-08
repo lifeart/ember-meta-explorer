@@ -372,6 +372,10 @@ it("support complex yield", () => {
   const input = `(<div>{yield(name, {foo:1})}</div>);`;
   assert(toHBS(input), "<div>{{yield name (hash foo=1)}}</div>");
 });
+it("support inline arrays join", () => {
+  const input = `<li className={['carousel-item', this.state.isActived === index ? 'actived': ''].join(' ')} ></li>`;
+  assert(toHBS(input), '<li class={{join (array "carousel-item" (if (eq this.state.isActived this.index) "actived" "")) " "}}></li>');
+})
 it("support basic yield", () => {
   const input = `(<div>{yield()}</div>);`;
   assert(toHBS(input), "<div>{{yield}}</div>");
