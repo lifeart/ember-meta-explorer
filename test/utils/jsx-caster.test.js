@@ -380,6 +380,22 @@ it("support basic yield", () => {
   const input = `(<div>{yield()}</div>);`;
   assert(toHBS(input), "<div>{{yield}}</div>");
 });
+it("able to support component to property assign", () => {
+  const input = `(<MyComponent secondComponent={<FooBar />} />);`;
+  assert(toHBS(input), '<MyComponent @secondComponent={{component "FooBar"}} />');
+});
+it("able handle string component params", () => {
+  const input = `(<MyComponent name="alex" />);`;
+  assert(toHBS(input), '<MyComponent @name="alex" />');
+});
+it("able to support component to property assign with params", () => {
+  const input = `(<MyComponent secondComponent={<FooBar name="alex" age={-1} />} />);`;
+  assert(toHBS(input), '<MyComponent @secondComponent={{component "FooBar" name="alex" age=-1}} />');
+});
+it("able to work with nested components assigment on props", () => {
+  const input = `(<MyComponent secondComponent={<FooBar a="a" c={<BarBaz b={<Boo />} />} />} />);`;
+  assert(toHBS(input), '<MyComponent @secondComponent={{component "FooBar" a="a" c=(component "BarBaz" b=(component "Boo"))}} />');
+})
 it("support basic props mapping with array fn", () => {
   const input = `(<ul>{props.todos.map(todo => <TodoItem key={todo.id} todo={todo} onToggle={props.onToggle} />)}</ul>);`;
   assert(

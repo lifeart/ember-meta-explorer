@@ -123,11 +123,11 @@ function hasComplexIdentifier(id) {
   }
 }
 
-function bHash() {
+function bHash(pairs = []) {
   return {
     type: "Hash",
     loc: null,
-    pairs: []
+    pairs
   };
 }
 
@@ -174,6 +174,23 @@ function operatorToPath(operator, parent = null) {
 function maybeMustacheStatementToSubExpression(node) {
   if (node.type === "MustacheStatement") {
     node.type = "SubExpression";
+  }
+  return node;
+}
+function maybeTextNodeToStringLiteral(node) {
+  if (node.type === "TextNode") {
+    node.type = "StringLiteral";
+    node.value = node.original = node.chars;
+  }
+  return node;
+}
+function maybeUnwrapSubExpression(node) {
+  if (node.type === 'SubExpression') {
+    if (node.hash.pairs.length === 0 && node.params.length === 0) {
+      if (['StringLiteral', 'NumberLiteral', 'NullLiteral', 'UndefinedLiteral'].includes(node.path.type)) {
+        return node.path;
+      }
+    }
   }
   return node;
 }
@@ -727,6 +744,13 @@ const casters = {
     };
   },
   UnaryExpression(node, parent) {
+    if (node.operator === '-' && node.prefix && node.argument.type === 'NumericLiteral') {
+      return {
+        type: "NumberLiteral",
+        value: `-${node.argument.value}`,
+        original: `-${node.argument.value}`
+      }
+    }
     return {
       type: "SubExpression",
       path: operatorToPath(node.operator),
@@ -979,6 +1003,37 @@ const casters = {
   JSXExpressionContainer(node, parent) {
     const expression = node.expression;
 
+    if (parent.type === 'JSXAttribute' && expression.type === 'JSXElement') {
+      return addASTNodeStrips({
+        type: "MustacheStatement",
+        loc: node.loc,
+        escaped: true,
+        path: {
+          type: "PathExpression",
+          original: "component",
+          this: false,
+          parts: ["component"],
+          data: false,
+          loc: null
+        },
+        params: [
+          {
+            type: "StringLiteral",
+            value: expression.openingElement.name.name,
+            original: expression.openingElement.name.name,
+            loc: null
+          }
+        ],
+        hash: bHash(expression.openingElement.attributes.map((attr) => cast(attr, expression)).filter((el)=>el.type === 'AttrNode').map((el)=>{
+          return {
+            type: "HashPair",
+            key: el.name,
+            value: maybeUnwrapSubExpression(maybeTextNodeToStringLiteral(maybeMustacheStatementToSubExpression(el.value)))
+          }
+        }))
+      });
+    }
+
     function hasInlineExpression(exp) {
       if (hasJSXInside(exp)) {
         return false;
@@ -1228,7 +1283,7 @@ const casters = {
     };
 
     let isComponent =
-      parent &&
+      parent && parent.name && parent.name.name && 
       parent.name.name.charAt(0) === parent.name.name.charAt(0).toUpperCase();
 
     if (result.name === "style" && result.value.type === "MustacheStatement") {
