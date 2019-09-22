@@ -420,13 +420,14 @@ const casters = {
       return castToString(param, node);
     });
     increaseScope(blockParams);
+    let body = Array.isArray(node.body) ? node.body[0] : node.body;
     let result = {
       type: "Block",
       blockParams: blockParams,
       body:
-        node.body.type === "JSXFragment"
-          ? cast(node.body, node)
-          : [cast(node.body, node)],
+      body.type === "JSXFragment"
+          ? cast(body, node)
+          : [cast(body, node)],
       loc: null
     };
     decreaseScope(blockParams);
@@ -462,6 +463,7 @@ const casters = {
       ((hasTypes(parent, ["VariableDeclarator"]) && parent.init === node) ||
         hasTypes(parent, ["JSXExpressionContainer"]))
     ) {
+
       if (node.callee.type === "MemberExpression") {
         if (
           hasTypes(node.callee.object, [
@@ -1179,6 +1181,24 @@ const casters = {
             program: cast(expression.arguments[0], expression)
           });
         } else {
+          let maybeProgramm = cast(expression.arguments[0], expression);
+          if (!Array.isArray(maybeProgramm.body)) {
+            maybeProgramm.body = [maybeProgramm.body];
+          }
+          maybeProgramm.body = maybeProgramm.body.map(el=>{
+            if (el.type === "PathExpression") {
+              return addASTNodeStrips({
+                  type: "MustacheStatement",
+                  hash: bHash(),
+                  path: el,
+                  params: [],
+                  loc: null,
+                  escaped: true
+              })
+            } else {
+              return el;
+            }
+          });
           return addASTNodeStrips({
             type: "BlockStatement",
             path: pathExpressionFromParam(cast(expression, node)),
@@ -1186,7 +1206,7 @@ const casters = {
             loc: expression.loc,
             inverse: null,
             hash: bHash(),
-            program: cast(expression.arguments[0], expression)
+            program: maybeProgramm
           });
         }
       } else {
@@ -1281,6 +1301,14 @@ const casters = {
       value: cast(node.value, node),
       loc: node.loc
     };
+
+    if (node.value === null && result.name !== 'attributes') {
+      result.value = {
+        type: 'TextNode',
+        chars: ''
+      }
+      return result;
+    }
 
     let isComponent =
       parent && parent.name && parent.name.name && 

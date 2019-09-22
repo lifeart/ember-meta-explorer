@@ -1,4 +1,5 @@
 import { print, preprocess, builders } from "@glimmer/syntax";
+
 const { parseScriptFile } = require("./js-utils");
 const {
   cast,
@@ -44,7 +45,7 @@ export function extractComponentFromClassMethod(path) {
   declarations = {};
   cleanDeclarationScope();
   cast(node);
-  addComponent(keyName, print(cast(node.body, node)));
+  addComponent(keyName, printComponent(cast(node.body, node)));
   cleanupExtractedComponents();
   const primaryKey = `${keyName}_declarated`;
   if (primaryKey in extractedComponents) {
@@ -54,12 +55,32 @@ export function extractComponentFromClassMethod(path) {
   }
 }
 
-function jsxComponentExtractor() {
+var isDebugEnabled = false;
+
+
+function printComponent(ast) {
+  if (isDebugEnabled) {
+    console.log('--------- printComponent ---------');
+    console.log(JSON.stringify(ast));
+    console.log('--------- printComponent ---------');
+  }
+  return print(ast);
+}
+
+function maybeLog(data) {
+  if (isDebugEnabled) {
+    console.log(JSON.stringify(data))
+  }
+}
+
+function jsxComponentExtractor(debug = false) {
+  isDebugEnabled = debug;
   extractedComponents = {};
   declarations = {};
   cleanDeclarationScope();
   return {
     FunctionDeclaration(path) {
+      maybeLog('FunctionDeclaration');
       let node = path.node;
       if (
         node.id &&
@@ -81,24 +102,26 @@ function jsxComponentExtractor() {
           if (hasValidJSXEntryNode(arg)) {
             cast(node);
             const printResult = cast(arg, result[0]);
-            addComponent(node.id.name, print(printResult));
+            addComponent(node.id.name, printComponent(printResult));
           }
         }
       }
     },
     FunctionExpression(path) {
+      maybeLog('FunctionExpression');
       let node = path.node;
       if (node.body && node.body.body && node.body.body.length) {
         let result = node.body.body.filter(el => el.type === "ReturnStatement");
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
-            addComponent("FunctionExpression", print(cast(arg, result[0])));
+            addComponent("FunctionExpression", printComponent(cast(arg, result[0])));
           }
         }
       }
     },
     ClassMethod(path) {
+      maybeLog('ClassMethod');
       let node = path.node;
       if (
         node.key.name &&
@@ -110,17 +133,23 @@ function jsxComponentExtractor() {
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
-            addComponent(node.key.name, print(cast(arg, result[0])));
+            addComponent(node.key.name, printComponent(cast(arg, result[0])));
           }
         }
       }
     },
     VariableDeclarator(path, parent) {
+      maybeLog(`VariableDeclarator:${path.node.id.name}`);
       let node = path.node;
-
       if (node.id && node.id.type === "Identifier") {
         if (node.init) {
-          if (node.init.type === "StringLiteral") {
+          if (node.init.type === "ArrowFunctionExpression") {
+            if (Array.isArray(node.init.body.body) && node.init.body.body.length === 1 && node.init.body.body[0].type === 'ReturnStatement') {
+              if (node.init.body.body[0].argument.type === 'JSXElement' || node.init.body.body[0].argument.type === 'JSXFragment') {
+                cast(node, parent);
+              }
+            }
+          } else if (node.init.type === "StringLiteral") {
             cast(node, parent);
           } else if (node.init.type === "NumericLiteral") {
             cast(node, parent);
@@ -159,11 +188,12 @@ function jsxComponentExtractor() {
       }
       if (node.id && node.id.name && node.init) {
         if (hasValidJSXEntryNode(node.init)) {
-          addComponent(node.id.name, print(cast(node.init, node)));
+          addComponent(node.id.name, printComponent(cast(node.init, node)));
         }
       }
     },
     ArrowFunctionExpression(path) {
+      maybeLog('ArrowFunctionExpression');
       let node = path.node;
       if (node.body) {
         if (hasValidJSXEntryNode(node.body)) {
@@ -174,7 +204,7 @@ function jsxComponentExtractor() {
               componentName = path.parent.id.name;
             }
           }
-          addComponent(componentName, print(cast(node.body, node)));
+          addComponent(componentName, printComponent(cast(node.body, node)));
         } else if (node.body.body && node.body.body.length) {
           let result = node.body.body.filter(
             el => el.type === "ReturnStatement"
@@ -193,7 +223,7 @@ function jsxComponentExtractor() {
               cast(node);
               addComponent(
                 componentName,
-                print(cast(arg, result[0]))
+                printComponent(cast(arg, result[0]))
               );
             }
           }
@@ -201,6 +231,7 @@ function jsxComponentExtractor() {
       }
     },
     ObjectMethod(path) {
+      maybeLog('ObjectMethod');
       let node = path.node;
       if (
         node.key.name &&
@@ -212,29 +243,31 @@ function jsxComponentExtractor() {
         if (result.length) {
           const arg = result[0].argument;
           if (hasValidJSXEntryNode(arg)) {
-            addComponent(node.key.name, print(cast(arg, result[0])));
+            addComponent(node.key.name, printComponent(cast(arg, result[0])));
           }
         }
       }
     },
     Program(path) {
+      maybeLog('Program');
       let node = path.node;
       if (node.sourceType === "module") {
         if (node.body.length && node.body[0].type === "ExpressionStatement") {
           if (hasValidJSXEntryNode(node.body[0].expression)) {
             addComponent(
               "root",
-              print(cast(node.body[0].expression, node.body[0]))
+              printComponent(cast(node.body[0].expression, node.body[0]))
             );
           }
         }
       }
     },
     ObjectProperty(path) {
+      maybeLog('ObjectProperty');
       let node = path.node;
       if (node.key.name && node.value) {
         if (hasValidJSXEntryNode(node.value)) {
-          addComponent(node.key.name, print(cast(node.value, node)));
+          addComponent(node.key.name, printComponent(cast(node.value, node)));
         }
       }
     }
@@ -248,8 +281,25 @@ function astPlugin(declarations) {
   return function buildDeclarationPatcherPlugin() {
     return {
       visitor: {
+        Block(node: any) {
+          if (node.body.length === 1 && node.body[0].type === 'MustacheStatement') {
+            let el = node.body[0];
+            let relatedElements = declarations.filter(([name, value, type]) => {
+              return ( name && name === el.path.original && type === "local" );
+            });
+            if (relatedElements.length) {
+              let item = relatedElements[0][1];
+              if (item.type === "Block") {
+                return item;
+              }
+            }
+          }
+        },
         MustacheStatement(node: any) {
           let original = node.path.original;
+          if (original.startsWith('this.')) {
+            original = original.replace('this.', '');
+          }
           let relatedElements = declarations.filter(([name, value, type]) => {
             return (
               (original === name || original === "this." + name) &&
@@ -260,6 +310,26 @@ function astPlugin(declarations) {
           });
           if (relatedElements.length) {
             return relatedElements[0][1];
+          } else {
+            relatedElements = declarations.filter(([name, value, type]) => {
+              return (
+                (original === name) &&
+                typeof value === "object" &&
+                value.type === "SubExpression" &&
+                type === "local"
+              );
+            });
+            if (relatedElements.length) {
+              let el = relatedElements[0][1];
+              if (el.path.original === 'map' && el.params.length === 2 && el.params[0].type === "Block") {
+                return block(
+                  path("each"),
+                  [el.params[1]],
+                  hash(),
+                  el.params[0]
+                )
+              }
+            }
           }
           return node;
         },
@@ -314,7 +384,10 @@ function astPlugin(declarations) {
 
 function cleanupExtractedComponents() {
   const declarationScope = getDeclarationScope();
-  // console.log('declarationScope', JSON.stringify(declarationScope));
+  if (isDebugEnabled) {
+    console.log('declarationScope', JSON.stringify(declarationScope));
+    console.log('extractedComponents', JSON.stringify(extractedComponents));
+  }
   Object.keys(extractedComponents).forEach(componentName => {
     let template = extractedComponents[componentName];
     let result = preprocess(template, {
@@ -324,7 +397,7 @@ function cleanupExtractedComponents() {
     } as any);
     //   console.log('declarationScope2', JSON.stringify(declarationScope));
     // console.log('contextItems2', JSON.stringify(contextItems));
-    let smartDeclaration = print(result);
+    let smartDeclaration = printComponent(result);
     let resolvedContext = Object.keys(contextItems);
     if (resolvedContext.length) {
       // console.log('resolvedContext', JSON.stringify(resolvedContext));
@@ -343,7 +416,7 @@ function cleanupExtractedComponents() {
         pairs.push(pair(el, value));
       });
       // console.log('pairs', JSON.stringify(pairs));
-      smartDeclaration = print(
+      smartDeclaration = printComponent(
         astTemplate([
           block(
             path("let"),
@@ -383,12 +456,12 @@ function cleanupExtractedComponents() {
   });
 }
 
-export function extractJSXComponents(jsxInput) {
+export function extractJSXComponents(jsxInput, debug = false) {
   let ast = parseScriptFile(jsxInput, {
     filename: "dummy.tsx",
     parserOpts: { isTSX: true }
   });
-  traverse(ast, jsxComponentExtractor());
+  traverse(ast, jsxComponentExtractor(debug));
   cleanupExtractedComponents();
   return extractedComponents;
 }

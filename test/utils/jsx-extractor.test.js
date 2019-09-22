@@ -1059,3 +1059,43 @@ class Carousel extends React.Component{
     render: "<div class={{get this.Style carousel}}> <ul class=\"carousel-list\"> {{#each @imageList as |item index|}}<li class={{join (array \"carousel-item\" (if (eq this.state.isActived index) \"actived\" \"\")) \" \"}} key={{index}}>  {{#if (and @showCloseBtn (eq this.state.isActived index))}}<span class=\"close-circle\" {{on \"click\" (this.delectPhoto.bind this index)}}></span>{{else}}{{/if}}  <img src={{item}} height=\"100%\" width=\"100%\" />  </li>{{/each}} {{#if (gt @imageList.length 1)}}<div><span class=\"pre-btn\" type=\"left-circle\" theme=\"outlined\" {{on \"click\" (this.slickPre.bind this)}}></span><span class=\"next-btn\" type=\"right-circle\" theme=\"outlined\" {{on \"click\" (this.slickNext.bind this)}}></span></div>{{else}}{{/if}} <SlickDot /> </ul> </div>"
   });
 });
+
+
+it("can handle random jsx from internet #1", () => {
+  const input = `
+  
+  export const Customers = ({customers}) => {
+    const CustomerRow = (customer,index) => {
+      return(<tr key = {index} className='even'> <td> {index + 1} </td> <td>{customer.firstName}</td> </tr>)
+    }
+
+    return (<Table striped bordered hover>{customers.map((cust,index) => CustomerRow(cust,index))}</Table>);
+  }`;
+
+  let result = extractJSXComponents(input);
+  assert(result, {
+    CustomerRow: "<tr key={{@index}} class=\"even\"> <td> {{inc @index 1}} </td> <td>{{this.customer.firstName}}</td> </tr>",
+    CustomerRow_declarated: "<tr key={{@index}} class=\"even\"> <td> {{inc @index 1}} </td> <td>{{@customer.firstName}}</td> </tr>",
+    Customers: "<Table striped bordered hover>{{#each @customers as |cust index|}}{{CustomerRow}}{{/each}}</Table>",
+    Customers_declarated: "<Table striped bordered hover>{{#each @customers as |customer index|}}<tr key={{index}} class=\"even\"> <td> {{inc index 1}} </td> <td>{{customer.firstName}}</td> </tr>{{/each}}</Table>"
+  });
+});
+
+it("can handle random jsx from internet #1", () => {
+  const input = `
+  
+  export const Customers = ({customers}) => {
+
+    const b = customers.map((cust,index) => <tr key = {index} className='even'> <td> {index + 1} </td> <td>{cust.firstName}</td> </tr>);
+
+    return (<Table striped bordered hover>{b}</Table>);
+  }`;
+
+  let result = extractJSXComponents(input);
+  assert(result, {
+    ArrowFunctionExpression: "<tr key={{@index}} class=\"even\"> <td> {{inc @index 1}} </td> <td>{{this.cust.firstName}}</td> </tr>",
+    ArrowFunctionExpression_declarated: "<tr key={{@index}} class=\"even\"> <td> {{inc @index 1}} </td> <td>{{@cust.firstName}}</td> </tr>",
+    Customers: "<Table striped bordered hover>{{this.b}}</Table>",
+    Customers_declarated: "<Table striped bordered hover>{{#each @customers as |cust index|}}<tr key={{index}} class=\"even\"> <td> {{inc index 1}} </td> <td>{{cust.firstName}}</td> </tr>{{/each}}</Table>"
+  });
+});
