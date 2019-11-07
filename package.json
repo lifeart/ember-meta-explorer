@@ -1,6 +1,6 @@
 {
 	"name": "ember-meta-explorer",
-	"version": "0.0.41",
+	"version": "0.1.0",
 	"description": "Statically analyzes ember project source for dependency trees and other information.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
