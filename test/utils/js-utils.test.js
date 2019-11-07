@@ -289,6 +289,22 @@ it('can hanldle jsx files', ()=>{
 	assert(parseScriptFile(input, { filename: Math.random() + "-.tsx", parserOpts: { isTSX: true } }).program.body[0].expression.type, 'JSXElement');
 })
 
+it('support optional chaining', ()=>{
+	const input = `const baz = obj?.foo?.bar?.baz; // 42`;
+	assert(parseScriptFile(input).program.body[0].type, 'VariableDeclaration');
+});
+
+it('support nullish coalescing', ()=>{
+	const input = `var foo = object.foo ?? "default";`;
+	assert(parseScriptFile(input).program.body[0].type, 'VariableDeclaration');
+});
+
+it('support private fields', ()=>{
+	const input = `class Foo { #name = 1}`;
+	assert(parseScriptFile(input).program.body[0].type, 'ClassDeclaration');
+
+});
+
 function assert(left, right) {
 	expect(left).toEqual(right);
 }

@@ -308,7 +308,9 @@ const babelOptions = {
   plugins: [
     ["@babel/plugin-proposal-decorators", { legacy: true }],
     ["@babel/proposal-class-properties", { loose: true }],
-    "@babel/proposal-object-rest-spread"
+    "@babel/proposal-object-rest-spread",
+    "@babel/plugin-proposal-optional-chaining",
+    "@babel/plugin-proposal-nullish-coalescing-operator"
   ],
   sourceType: "module",
   // parserOpts: {
