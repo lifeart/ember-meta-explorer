@@ -266,7 +266,7 @@ function flattenMemberExpression(node) {
   return parts;
 }
 
-export function cast(node, parent = null, createdParent = {}) {
+export function cast(node, parent = null, createdParent = { type : null} ) {
   if (node === null || node.__casted === true) {
     return node;
   }
@@ -275,7 +275,7 @@ export function cast(node, parent = null, createdParent = {}) {
     if (traceEnabled) {
       traceStack.push([`cast: ${node.type}`, `parent: ${parent ? parent.type : '-'}`]);
     }
-    const result = casters[type](node, parent);
+    const result = casters[type](node, parent, createdParent);
     if (typeof result === "object" && result !== null) {
       Object.assign(result, {
         __casted: true
@@ -714,7 +714,7 @@ const casters = {
             }
             return p;
           })(),
-          cast(node.property, node)
+          cast(node.property, node, { type: 'PathExpression'})
         ],
         hash: {
           type: "Hash",
@@ -1272,7 +1272,7 @@ const casters = {
       }
     });
   },
-  StringLiteral(node, parent = null) {
+  StringLiteral(node, parent = null, createdParent = { type: null}) {
     if (parent && parent.type === "ObjectProperty") {
       if (parent.key === node) {
         return node.value;
@@ -1289,7 +1289,7 @@ const casters = {
         "LogicalExpression",
         "ArrayExpression",
         "VariableDeclarator"
-      ])
+      ]) || (createdParent.type === 'SubExpression' || createdParent.type === 'PathExpression')
     ) {
       return {
         type: "StringLiteral",
