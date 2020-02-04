@@ -1,6 +1,6 @@
 var scopedVariables = [];
 var declaredVariables = [];
-
+import { builders as b } from '@glimmer/syntax';
 import { patternMatch } from "./hbs-utils";
 
 var traceEnabled = false;
@@ -11,6 +11,17 @@ export function casterTrace(state) {
     traceStack = [];
   }
   traceEnabled = state;
+}
+
+function toProgram(node) {
+  if (node.type === 'Block') {
+    return node;
+  }
+  let block = b.blockItself(Array.isArray(node) ? node : [node]);
+  if (!node) {
+    block.body = [];
+  }
+  return block;
 }
 
 export function addASTNodeStrips(node) {
@@ -48,6 +59,12 @@ export function addASTNodeStrips(node) {
       if (el.type === 'StringLiteral') {
         el.type = 'TextNode';
         el.chars = el.original;
+        delete el.original;
+        delete el.value;
+      }
+      if (el.type === 'NumberLiteral') {
+        el.type = 'TextNode';
+        el.chars = String(el.original);
         delete el.original;
         delete el.value;
       }
@@ -249,7 +266,7 @@ function flattenMemberExpression(node) {
   return parts;
 }
 
-export function cast(node, parent = null) {
+export function cast(node, parent = null, createdParent = {}) {
   if (node === null || node.__casted === true) {
     return node;
   }
@@ -298,13 +315,8 @@ function decreaseScope(params) {
 }
 
 const casters = {
-  NumericLiteral(node) {
-    return {
-      type: "NumberLiteral",
-      loc: node.loc,
-      value: node.value,
-      original: node.value
-    };
+  NumericLiteral(node, parent = {}, createdParent = { type: null }) {
+    return createdParent.type === 'Block' ? b.text(String(node.value), node.loc) : b.number(node.value);
   },
   ConditionalExpression(node, parent) {
     const nodeType =
@@ -326,22 +338,23 @@ const casters = {
         path: operatorToPath("if"),
         loc: node.loc,
         params: [cast(node.test, node)],
-        program: {
+        program: toProgram({
           type: "Block",
           body:
             node.consequent.type === "JSXFragment"
-              ? cast(node.consequent, node)
-              : [cast(node.consequent, node)],
+              ? cast(node.consequent, node, { type: 'Block'})
+              : [cast(node.consequent, node, { type: 'Block'})],
           blockParams: [],
+          chained: false,
           log: null
-        },
+        }),
         inverse: node.alternate
           ? {
               type: "Block",
               body:
                 node.alternate.type === "JSXFragment"
-                  ? cast(node.alternate, node)
-                  : [cast(node.alternate, node)],
+                  ? cast(node.alternate, node, { type: 'Block'})
+                  : [cast(node.alternate, node, { type: 'Block'})],
               blockParams: [],
               log: null
             }
@@ -426,8 +439,8 @@ const casters = {
       blockParams: blockParams,
       body:
       body.type === "JSXFragment"
-          ? cast(body, node)
-          : [cast(body, node)],
+          ? cast(body, node, {type: "Block"})
+          : [cast(body, node, {type: "Block"})],
       loc: null
     };
     decreaseScope(blockParams);
@@ -441,7 +454,7 @@ const casters = {
     let result = {
       type: "Block",
       blockParams: blockParams,
-      body: [cast(node.body, node)],
+      body: [cast(node.body, node, {type: "Block"})],
       loc: null
     };
     decreaseScope(blockParams);
@@ -1108,7 +1121,7 @@ const casters = {
           loc: expression.loc,
           inverse: null,
           hash: bHash(),
-          program: cast(expression.right, expression)
+          program: toProgram(cast(expression.right, expression))
         });
       }
     }
@@ -1178,7 +1191,7 @@ const casters = {
             loc: expression.loc,
             inverse: null,
             hash: bHash(),
-            program: cast(expression.arguments[0], expression)
+            program: toProgram(cast(expression.arguments[0], expression))
           });
         } else {
           let maybeProgramm = cast(expression.arguments[0], expression);
@@ -1206,7 +1219,7 @@ const casters = {
             loc: expression.loc,
             inverse: null,
             hash: bHash(),
-            program: maybeProgramm
+            program: toProgram(maybeProgramm)
           });
         }
       } else {
