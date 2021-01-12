@@ -310,7 +310,13 @@ const babelOptions = {
     ["@babel/proposal-class-properties", { loose: true }],
     "@babel/proposal-object-rest-spread",
     "@babel/plugin-proposal-optional-chaining",
-    "@babel/plugin-proposal-nullish-coalescing-operator"
+    "@babel/plugin-proposal-nullish-coalescing-operator",
+    "@babel/plugin-proposal-numeric-separator",
+    "@babel/plugin-proposal-logical-assignment-operators",
+    "@babel/plugin-proposal-private-methods",
+    "@babel/plugin-proposal-async-generator-functions",
+    "@babel/plugin-proposal-function-sent",
+    "@babel/plugin-proposal-do-expressions"
   ],
   sourceType: "module",
   // parserOpts: {
