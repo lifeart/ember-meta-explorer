@@ -6,9 +6,29 @@ const {
   extractJSXComponents,
   extractComponentFromClassMethod
 } = require("../../dist/utils/jsx-extractor");
+const syntax = require("@glimmer/syntax");
+
+function beautify(hbs) {
+  const opts = { entityEncoding: 'transformed' };
+  return syntax.print(syntax.preprocess(hbs), opts);
+}
 
 function assert(left, right) {
-  expect(left).toEqual(right);
+  if (typeof left === 'string' || typeof right === 'string') {
+    expect(beautify(left)).toEqual(beautify(right));
+  } else {
+    const newLeft = {...left};
+    const newRight = {...right};
+    Object.keys(newLeft).forEach((key) => {
+      newLeft[key] = beautify(newLeft[key]);
+    });
+    Object.keys(newRight).forEach((key) => {
+      newRight[key] = beautify(newRight[key]);
+    });
+    Array.from(new Set([...Object.keys(newLeft),...Object.keys(newRight)])).forEach((key) => {
+      expect(newLeft[key]).toEqual(newRight[key]);
+    });
+  }
 }
 
 it("can work with glimmerx template declaration", () => {
@@ -196,7 +216,7 @@ it("support external onClick", () => {
     return   <img onClick={onClick} />;
 }`;
   assert(extractJSXComponents(input), {
-    template: '<img {{on "click" @onClick}} />'
+    template: '<img {{on "click" @onClick}}>'
   });
 });
 it("supporty creepy jsx", () => {
@@ -234,13 +254,13 @@ it("support computed object keys access", () => {
 it("support optional actions", () => {
   const input = `<img onClick={optional(onClick)} />`;
   assert(extractJSXComponents(input), {
-    root: '<img {{on "click" (optional onClick)}} />'
+    root: '<img {{on "click" (optional onClick)}}>'
   });
 });
 it("support optional external actions", () => {
   const input = `export default function template({onClick}) { return <img onClick={optional(onClick)} /> }`;
   assert(extractJSXComponents(input), {
-    template: '<img {{on "click" (optional @onClick)}} />'
+    template: '<img {{on "click" (optional @onClick)}}>'
   });
 });
 it("support style modifier over components", () => {
@@ -374,7 +394,7 @@ it("can support react sketchapp examples", () => {
   `;
   assert(extractJSXComponents(input), {
     Swatch:
-      '<View @name={{@name}} {{style (hash height=96 width=96 margin=4 backgroundColor=@hex padding=8)}}> <Text @name="Swatch Name" {{style (hash color=(textColor @hex) fontWeight="bold")}}>{{@name}}</Text> <Text @name="Swatch Hex" {{style (hash color=(textColor @hex))}}>{{@hex}}</Text> </View>'
+      '<View {{style (hash height=96 width=96 margin=4 backgroundColor=@hex padding=8)}} @name={{@name}} /> <Text {{style (hash color=(textColor @hex) fontWeight="bold")}} @name="Swatch Name" />{{@name}}</Text> <Text {{style (hash color=(textColor @hex))}} @name="Swatch Hex" />{{@hex}}</Text> </View>'
   });
 });
 it("can handle basic string declarations", () => {
@@ -964,9 +984,9 @@ it("can handle components with state hook", () => {
   // idea todo -> we can catch setGreeting and produce {{action (mut this.greeting)}}, or kinda
   assert(extractJSXComponents(input), {
     Headline:
-      '<div><h1>{{this.greeting1}}</h1><input type="text" value={{this.greeting1}} {{on "change" this.handleChange}} /></div>',
+      '<div><h1>{{this.greeting1}}</h1><input {{on "change" this.handleChange}} type="text" value={{this.greeting1}}></div>',
     Headline_declarated:
-      '{{#let (hash greeting1="Hello Function Component!") as |ctx|}}<div><h1>{{ctx.greeting1}}</h1><input type="text" value={{ctx.greeting1}} {{on "change" this.handleChange}} /></div>{{/let}}'
+      '{{#let (hash greeting1="Hello Function Component!") as |ctx|}}<div><h1>{{ctx.greeting1}}</h1><input {{on "change" this.handleChange}} type="text" value={{ctx.greeting1}}></div>{{/let}}'
   });
 });
 
@@ -987,9 +1007,9 @@ it("can handle components with simple object state hook", () => {
 
   assert(extractJSXComponents(input), {
     Headline:
-      '<div><h1>{{this.greeting12}}</h1><input type="text" value={{this.greeting12}} {{on "change" this.handleChange}} /></div>',
+      '<div><h1>{{this.greeting12}}</h1><input {{on "change" this.handleChange}} type="text" value={{this.greeting12}}></div>',
     Headline_declarated:
-      '{{#let (hash greeting12=(hash a=1 b="2" c=(array 1) d=false)) as |ctx|}}<div><h1>{{ctx.greeting12}}</h1><input type="text" value={{ctx.greeting12}} {{on "change" this.handleChange}} /></div>{{/let}}'
+      '{{#let (hash greeting12=(hash a=1 b="2" c=(array 1) d=false)) as |ctx|}}<div><h1>{{ctx.greeting12}}</h1><input {{on "change" this.handleChange}} type="text" value={{ctx.greeting12}}></div>{{/let}}'
   });
 });
 
@@ -1054,9 +1074,9 @@ class Carousel extends React.Component{
     }
   })
   assert(result, {
-    ArrowFunctionExpression: "<li class={{if (eq this.state.isActived @index) \"acitve\" \"\"}} key={{@index}} {{on \"click\" (this.changeSlick.bind this @index)}}></li>",
-    ArrowFunctionExpression_: "<li class={{join (array \"carousel-item\" (if (eq this.state.isActived @index) \"actived\" \"\")) \" \"}} key={{@index}}>  {{#if (and @showCloseBtn (eq this.state.isActived @index))}}<span class=\"close-circle\" {{on \"click\" (this.delectPhoto.bind this @index)}}></span>{{else}}{{/if}}  <img src={{@item}} height=\"100%\" width=\"100%\" />  </li>",
-    render: "<div class={{get this.Style \"carousel\"}}> <ul class=\"carousel-list\"> {{#each @imageList as |item index|}}<li class={{join (array \"carousel-item\" (if (eq this.state.isActived index) \"actived\" \"\")) \" \"}} key={{index}}>  {{#if (and @showCloseBtn (eq this.state.isActived index))}}<span class=\"close-circle\" {{on \"click\" (this.delectPhoto.bind this index)}}></span>{{else}}{{/if}}  <img src={{item}} height=\"100%\" width=\"100%\" />  </li>{{/each}} {{#if (gt @imageList.length 1)}}<div><span class=\"pre-btn\" type=\"left-circle\" theme=\"outlined\" {{on \"click\" (this.slickPre.bind this)}}></span><span class=\"next-btn\" type=\"right-circle\" theme=\"outlined\" {{on \"click\" (this.slickNext.bind this)}}></span></div>{{else}}{{/if}} <SlickDot /> </ul> </div>"
+    ArrowFunctionExpression: "<li {{on \"click\" (this.changeSlick.bind this @index)}} class={{if (eq this.state.isActived @index) \"acitve\" \"\"}} key={{@index}}></li>",
+    ArrowFunctionExpression_: "<li class={{join (array \"carousel-item\" (if (eq this.state.isActived @index) \"actived\" \"\")) \" \"}} key={{@index}}>  {{#if (and @showCloseBtn (eq this.state.isActived @index))}}<span {{on \"click\" (this.delectPhoto.bind this @index)}} class=\"close-circle\"></span>{{else}}{{/if}}  <img src={{@item}} height=\"100%\" width=\"100%\">  </li>",
+    render: "<div class={{get this.Style \"carousel\"}}> <ul class=\"carousel-list\"> {{#each @imageList as |item index|}}<li class={{join (array \"carousel-item\" (if (eq this.state.isActived index) \"actived\" \"\")) \" \"}} key={{index}}>  {{#if (and @showCloseBtn (eq this.state.isActived index))}}<span {{on \"click\" (this.delectPhoto.bind this index)}} class=\"close-circle\"></span>{{else}}{{/if}}  <img src={{item}} height=\"100%\" width=\"100%\">  </li>{{/each}} {{#if (gt @imageList.length 1)}}<div><span {{on \"click\" (this.slickPre.bind this)}} class=\"pre-btn\" type=\"left-circle\" theme=\"outlined\"></span><span {{on \"click\" (this.slickNext.bind this)}} class=\"next-btn\" type=\"right-circle\" theme=\"outlined\"></span></div>{{else}}{{/if}} <SlickDot /> </ul> </div>"
   });
 });
 

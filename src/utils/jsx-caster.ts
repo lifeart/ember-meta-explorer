@@ -1,6 +1,6 @@
 var scopedVariables = [];
 var declaredVariables = [];
-import { builders as b } from '@glimmer/syntax';
+import { ASTv1, builders as b } from '@glimmer/syntax';
 import { patternMatch } from "./hbs-utils";
 
 var traceEnabled = false;
@@ -55,7 +55,7 @@ export function addASTNodeStrips(node) {
   }
 
   function fixStringLiteralsInsideBody(body) {
-    body.forEach((el)=>{
+    (body.body || body).forEach((el)=>{
       if (el.type === 'StringLiteral') {
         el.type = 'TextNode';
         el.chars = el.original;
@@ -112,6 +112,11 @@ function hasJSXInside(node) {
   return strNode.includes('"JSXElement"') || strNode.includes('"JSXFragment"');
 }
 
+function emptyLoc() {
+  const loc =  b.loc({start:{line:0,column:0}, end: {line:0,column:0}});
+  return loc;
+}
+
 function hasComplexIdentifier(id) {
   if (!id) {
     return false;
@@ -141,11 +146,7 @@ function hasComplexIdentifier(id) {
 }
 
 function bHash(pairs = []) {
-  return {
-    type: "Hash",
-    loc: null,
-    pairs
-  };
+  return b.hash(pairs);
 }
 
 function hasTypes(item, types) {
@@ -178,26 +179,22 @@ function operatorToPath(operator, parent = null) {
 
   let resolvedResult = operationMap[operator];
 
-  return {
-    type: "PathExpression",
-    original: resolvedResult,
-    this: false,
-    parts: [resolvedResult],
-    data: false,
-    loc: null
-  };
+  return b.path(resolvedResult);
 }
 
-function maybeMustacheStatementToSubExpression(node) {
+function maybeMustacheStatementToSubExpression(node: ASTv1.MustacheStatement) {
   if (node.type === "MustacheStatement") {
-    node.type = "SubExpression";
+    return b.sexpr(
+      node.path,
+      node.params,
+      node.hash
+    );
   }
   return node;
 }
 function maybeTextNodeToStringLiteral(node) {
   if (node.type === "TextNode") {
-    node.type = "StringLiteral";
-    node.value = node.original = node.chars;
+    return b.string(node.chars);
   }
   return node;
 }
@@ -239,14 +236,7 @@ function pathExpressionFromParam(node) {
     node.path.original === "map";
 
   if (isSub || (node.original && node.original.endsWith(".map"))) {
-    return {
-      type: "PathExpression",
-      original: "each",
-      this: false,
-      parts: ["each"],
-      data: false,
-      loc: null
-    };
+    return b.path('each');
   }
   return null;
 }
@@ -332,34 +322,24 @@ const casters = {
     let hasComplexLeft = hasComplexIdentifier(node.consequent);
     let hasComplexRight = hasComplexIdentifier(node.alternate);
     if (hasComplexLeft || hasComplexRight) {
-      let result = {
-        type: "BlockStatement",
-        hash: bHash(),
-        path: operatorToPath("if"),
-        loc: node.loc,
-        params: [cast(node.test, node)],
-        program: toProgram({
-          type: "Block",
-          body:
+      let result = b.block(
+        operatorToPath("if"), 
+        [cast(node.test, node)],
+        bHash(),
+        toProgram(
+          b.blockItself(
             node.consequent.type === "JSXFragment"
               ? cast(node.consequent, node, { type: 'Block'})
-              : [cast(node.consequent, node, { type: 'Block'})],
-          blockParams: [],
-          chained: false,
-          log: null
-        }),
-        inverse: node.alternate
-          ? {
-              type: "Block",
-              body:
-                node.alternate.type === "JSXFragment"
-                  ? cast(node.alternate, node, { type: 'Block'})
-                  : [cast(node.alternate, node, { type: 'Block'})],
-              blockParams: [],
-              log: null
-            }
-          : null
-      };
+              : [cast(node.consequent, node, { type: 'Block'})]
+        )),
+        node.alternate ? 
+        b.blockItself(
+          node.alternate.type === "JSXFragment"
+                ? cast(node.alternate, node, { type: 'Block'})
+                : [cast(node.alternate, node, { type: 'Block'})],
+        )
+        : undefined
+      );
 
       if (hasComplexLeft && hasComplexLeft !== true) {
         result.program.body = [hasComplexLeft];
@@ -382,7 +362,7 @@ const casters = {
     return addASTNodeStrips({
       type: nodeType,
       hash: bHash(),
-      loc: node.loc,
+      loc: emptyLoc(),
       path: operatorToPath("if"),
       params: [
         cast(node.test, node),
@@ -394,13 +374,7 @@ const casters = {
     });
   },
   BinaryExpression(node) {
-    return {
-      type: "SubExpression",
-      hash: bHash(),
-      loc: node.loc,
-      path: operatorToPath(node.operator, node),
-      params: [cast(node.left, node), cast(node.right, node)]
-    };
+    return b.sexpr(operatorToPath(node.operator, node), [cast(node.left, node), cast(node.right, node)], bHash());
   },
   UpdateExpression(node, parent) {
     return addASTNodeStrips({
@@ -409,7 +383,7 @@ const casters = {
           ? "MustacheStatement"
           : "SubExpression",
       hash: bHash(),
-      loc: node.loc,
+      loc: emptyLoc(),
       path: operatorToPath(node.operator),
       params: [cast(node.argument, node)]
     });
@@ -434,15 +408,11 @@ const casters = {
     });
     increaseScope(blockParams);
     let body = Array.isArray(node.body) ? node.body[0] : node.body;
-    let result = {
-      type: "Block",
-      blockParams: blockParams,
-      body:
-      body.type === "JSXFragment"
-          ? cast(body, node, {type: "Block"})
-          : [cast(body, node, {type: "Block"})],
-      loc: null
-    };
+    let bodyResult = body.type === "JSXFragment" ? cast(body, node, {type: "Block"}) : [cast(body, node, {type: "Block"})];
+    let result = b.blockItself(
+      Array.isArray(bodyResult) ? bodyResult : [bodyResult],
+      blockParams
+    );
     decreaseScope(blockParams);
     return result;
   },
@@ -451,25 +421,14 @@ const casters = {
       return castToString(param, node);
     });
     increaseScope(blockParams);
-    let result = {
-      type: "Block",
-      blockParams: blockParams,
-      body: [cast(node.body, node, {type: "Block"})],
-      loc: null
-    };
+    let result = b.blockItself([cast(node.body, node, {type: "Block"})], blockParams);
     decreaseScope(blockParams);
     return result;
   },
 
   CallExpression(node, parent) {
     if (parent && parent.type === "ObjectProperty") {
-      return {
-        type: "SubExpression",
-        hash: bHash(),
-        loc: node.loc,
-        path: cast(node.callee, node),
-        params: node.arguments.map(arg => cast(arg, node))
-      };
+      return b.sexpr(cast(node.callee, node), node.arguments.map(arg => cast(arg, node)), bHash());
     }
     if (
       parent &&
@@ -487,43 +446,31 @@ const casters = {
           node.callee.property.type === "Identifier"
         ) {
           if (node.callee.property.name === "join" && node.arguments.length) {
-            return {
-              type: "SubExpression",
-              hash: bHash(),
-              loc: node.loc,
-              path: cast(node.callee.property, node),
-              params: [
+            return b.sexpr(
+              cast(node.callee.property, node),
+              [
                 maybeMustacheStatementToSubExpression(cast(node.callee.object, node.callee)),
                 maybeMustacheStatementToSubExpression(cast(node.arguments[0], node))
               ]
-            };
+            );
           } else if (
             node.callee.property.name === "includes" &&
             node.arguments.length
           ) {
             // to align with helper names
             node.callee.property.name = "contains";
-            return {
-              type: "SubExpression",
-              hash: bHash(),
-              loc: node.loc,
-              path: cast(node.callee.property, node),
-              params: [
-                maybeMustacheStatementToSubExpression(cast(node.callee.object, node.callee)),
-                maybeMustacheStatementToSubExpression(cast(node.arguments[0], node))
-              ]
-            };
+            return b.sexpr(cast(node.callee.property, node), [
+              maybeMustacheStatementToSubExpression(cast(node.callee.object, node.callee)),
+              maybeMustacheStatementToSubExpression(cast(node.arguments[0], node))
+            ]);
           } else if (
             node.callee.property.name === "reverse" &&
             node.arguments.length === 0
           ) {
-            return {
-              type: "SubExpression",
-              hash: bHash(),
-              loc: node.loc,
-              path: cast(node.callee.property, node),
-              params: [maybeMustacheStatementToSubExpression(cast(node.callee.object, node.callee))]
-            };
+            return b.sexpr(
+              cast(node.callee.property, node),
+              [maybeMustacheStatementToSubExpression(cast(node.callee.object, node.callee))]
+            );
           } else if (node.callee.property.name === "reduce") {
             let params = [
               cast(node.arguments[0]),
@@ -532,25 +479,19 @@ const casters = {
             if (node.arguments.length === 2) {
               params.push(cast(node.arguments[1]));
             }
-            return {
-              type: "SubExpression",
-              hash: bHash(),
-              loc: node.loc,
-              path: cast(node.callee.property, node),
-              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
-            };
+            return b.sexpr(
+              cast(node.callee.property, node),
+              params.map((p)=>maybeMustacheStatementToSubExpression(p))
+            );
           } else if (node.callee.property.name === "map") {
             let params = [
               cast(node.arguments[0]),
               cast(node.callee.object, node.callee)
             ];
-            return {
-              type: "SubExpression",
-              hash: bHash(),
-              loc: node.loc,
-              path: cast(node.callee.property, node),
-              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
-            };
+            return b.sexpr(
+              cast(node.callee.property, node),
+              params.map((p)=>maybeMustacheStatementToSubExpression(p))
+            );
           } else if (
             node.callee.property.name === "slice" &&
             node.arguments.length === 2
@@ -560,13 +501,10 @@ const casters = {
               cast(node.arguments[1]),
               cast(node.callee.object, node.callee)
             ];
-            return {
-              type: "SubExpression",
-              hash: bHash(),
-              loc: node.loc,
-              path: cast(node.callee.property, node),
-              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
-            };
+            return b.sexpr(
+              cast(node.callee.property, node),
+              params.map((p)=>maybeMustacheStatementToSubExpression(p))
+            );
           } else if (
             node.callee.property.name === "append" &&
             node.arguments.length === 1
@@ -575,13 +513,10 @@ const casters = {
               cast(node.callee.object, node.callee),
               cast(node.arguments[0])
             ];
-            return {
-              type: "SubExpression",
-              hash: bHash(),
-              loc: node.loc,
-              path: cast(node.callee.property, node),
-              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
-            };
+            return b.sexpr(
+              cast(node.callee.property, node),
+              params.map((p)=>maybeMustacheStatementToSubExpression(p))
+            );
           } else if (
             node.callee.property.name === "filter" &&
             node.arguments.length === 1
@@ -590,13 +525,10 @@ const casters = {
               cast(node.arguments[0]),
               cast(node.callee.object, node.callee)
             ];
-            return {
-              type: "SubExpression",
-              hash: bHash(),
-              loc: node.loc,
-              path: cast(node.callee.property, node),
-              params: params.map((p)=>maybeMustacheStatementToSubExpression(p))
-            };
+            return b.sexpr(
+              cast(node.callee.property, node),
+              params.map((p)=>maybeMustacheStatementToSubExpression(p))
+            );
           }
         }
       }
@@ -610,13 +542,9 @@ const casters = {
       ])
     ) {
       increaseScope([node.callee.name]);
-      let result = {
-        type: "SubExpression",
-        hash: bHash(),
-        loc: node.loc,
-        path: cast(node.callee, node),
-        params: node.arguments.map(arg => maybeMustacheStatementToSubExpression(cast(arg, node)))
-      };
+      let result = b.sexpr(cast(node.callee, node),
+        node.arguments.map(arg => maybeMustacheStatementToSubExpression(cast(arg, node)))
+      );
       decreaseScope([node.callee.name]);
       return result;
     }
@@ -626,13 +554,7 @@ const casters = {
     return node.name;
   },
   NullLiteral(node, parent) {
-    let result = {
-      type: "NullLiteral",
-      value: null,
-      original: null,
-      loc: node.log
-    };
-    return result;
+    return b.null();
   },
   VariableDeclarator(node) {
     if (node.id && node.id.type === "Identifier") {
@@ -698,14 +620,7 @@ const casters = {
     if (node.computed) {
       return {
         type: "SubExpression",
-        path: {
-          type: "PathExpression",
-          original: "get",
-          this: false,
-          parts: ["get"],
-          data: false,
-          loc: null
-        },
+        path: b.path('get'),
         params: [
           (function() {
             let p = cast(node.object, node);
@@ -716,12 +631,8 @@ const casters = {
           })(),
           cast(node.property, node, { type: 'PathExpression'})
         ],
-        hash: {
-          type: "Hash",
-          pairs: [],
-          loc: null
-        },
-        loc: null
+        hash: b.hash([]),
+        loc: emptyLoc()
       };
     }
     let items = flattenMemberExpression(node);
@@ -755,55 +666,29 @@ const casters = {
       this: isExternal ? false : prefix ? true : false,
       parts: items,
       data: isExternal,
-      loc: node.loc
+      loc: emptyLoc()
     };
   },
   UnaryExpression(node, parent) {
     if (node.operator === '-' && node.prefix && node.argument.type === 'NumericLiteral') {
-      return {
-        type: "NumberLiteral",
-        value: `-${node.argument.value}`,
-        original: `-${node.argument.value}`
-      }
+      return b.number(parseInt(`-${node.argument.value}`, 10));
     }
-    return {
-      type: "SubExpression",
-      path: operatorToPath(node.operator),
-      params: [cast(node.argument, node)],
-      loc: node.loc,
-      hash: bHash()
-    };
+    return b.sexpr(operatorToPath(node.operator), [cast(node.argument, node)]);
   },
   LogicalExpression(node, parent) {
-    return {
-      type: "SubExpression",
-      path: operatorToPath(node.operator),
-      params: [cast(node.left, node), cast(node.right, node)],
-      loc: node.loc,
-      hash: bHash()
-    };
+    return b.sexpr(operatorToPath(node.operator), [cast(node.left, node), cast(node.right, node)]);
   },
   Identifier(node, parent = null) {
     if (node.name === "undefined") {
-      return {
-        type: "UndefinedLiteral",
-        value: undefined,
-        original: undefined,
-        loc: node.loc
-      };
+      return b.undefined();
     }
     if (parent && parent.type === 'JSXSpreadAttribute' && parent.argument.properties.some((prop) => prop.key === node)) {
       return node.name;
     } else if (parent && parent.type === 'JSXSpreadAttribute' && parent.argument.properties.some((prop) => prop.value === node)) {
 
-      return addASTNodeStrips({
-        type: "MustacheStatement",
-        loc: node.loc,
-        escaped: true,
-        path: this.Identifier(node, parent.argument.properties[0]),
-        params: [],
-        hash: bHash()
-      });
+      return addASTNodeStrips(
+        b.mustache(this.Identifier(node, parent.argument.properties[0]))
+      );
       
     }
     if (
@@ -848,7 +733,7 @@ const casters = {
         this: false,
         parts: [node.name],
         data: true,
-        loc: node.loc
+        loc: emptyLoc()
       };
     }
 
@@ -858,16 +743,11 @@ const casters = {
       this: prefix ? true : false,
       parts: [node.name],
       data: false,
-      loc: node.loc
+      loc: emptyLoc()
     };
   },
   BooleanLiteral(node) {
-    return {
-      type: "BooleanLiteral",
-      value: node.value,
-      original: node.value,
-      loc: node.loc
-    };
+    return b.boolean(node.value);
   },
   JSXFragment(node, parent) {
     let results = node.children.map(el => cast(el, node));
@@ -883,7 +763,7 @@ const casters = {
         type: "Template",
         body: results,
         blockParams: [],
-        loc: parent.loc
+        loc: emptyLoc()
       };
     }
     return results;
@@ -900,41 +780,24 @@ const casters = {
         ? "SubExpression"
         : "MustacheStatement",
       params: [],
-      loc: node.loc,
+      loc: emptyLoc(),
       escaped: true,
       hash: {
         type: "Hash",
-        loc: null,
+        loc: emptyLoc(),
         // todo ObjectMethod support?
         pairs: node.properties
           .filter(prop => prop.type === "ObjectProperty")
           .map(prop => {
-            return {
-              type: "HashPair",
-              key: cast(prop.key, prop),
-              value: cast(prop.value, prop),
-              loc: prop.loc
-            };
+            return b.pair(cast(prop.key, prop), cast(prop.value, prop));
           })
       },
-      path: {
-        type: "PathExpression",
-        original: "hash",
-        this: false,
-        parts: ["hash"],
-        data: false,
-        loc: null
-      }
+      path: b.path('hash')
     });
   },
   ObjectProperty(node, parent) {
     if (parent && parent.type === 'JSXSpreadAttribute') {
-      return {
-        type: "AttrNode",
-        name: '@' + cast(node.key, parent),
-        value: cast(node.value, parent),
-        loc: node.loc
-      };
+      return b.attr('@' + cast(node.key, parent), cast(node.value, parent));
     } else {
       return null;
     }
@@ -950,17 +813,10 @@ const casters = {
         ? "SubExpression"
         : "MustacheStatement",
       params: node.elements.map(el => maybeMustacheStatementToSubExpression(cast(el, node))),
-      loc: node.loc,
+      loc: emptyLoc(),
       escaped: true,
       hash: bHash(),
-      path: {
-        type: "PathExpression",
-        original: "array",
-        this: false,
-        parts: ["array"],
-        data: false,
-        loc: null
-      }
+      path: b.path('array')
     });
   },
   TemplateElement(node, parent) {
@@ -968,7 +824,7 @@ const casters = {
       type: "StringLiteral",
       value: node.value.cooked,
       original: node.value.raw,
-      loc: node.loc
+      loc: emptyLoc()
     };
   },
   TemplateLiteral(node, parent) {
@@ -986,17 +842,10 @@ const casters = {
         ? "SubExpression"
         : "MustacheStatement",
       params: parts.map(item => cast(item, node)),
-      loc: node.loc,
+      loc: emptyLoc(),
       escaped: true,
       hash: bHash(),
-      path: {
-        type: "PathExpression",
-        original: "concat",
-        this: false,
-        parts: ["concat"],
-        data: false,
-        loc: null
-      }
+      path: b.path('concat')
     });
   },
   BlockStatement(node, parent) {
@@ -1004,12 +853,7 @@ const casters = {
     if (returns.length) {
       return cast(returns[0].argument, returns[0]);
     } else {
-      return {
-        type: "Template",
-        body: node.body.map((el => cast(el, node))),
-        blockParams: [],
-        loc: node.loc
-      };
+      return b.template(node.body.map((el => cast(el, node))));
     }
   },
   IfStatement(node, parent) {
@@ -1021,30 +865,17 @@ const casters = {
     if (parent.type === 'JSXAttribute' && expression.type === 'JSXElement') {
       return addASTNodeStrips({
         type: "MustacheStatement",
-        loc: node.loc,
+        loc: emptyLoc(),
         escaped: true,
-        path: {
-          type: "PathExpression",
-          original: "component",
-          this: false,
-          parts: ["component"],
-          data: false,
-          loc: null
-        },
+        path: b.path("component"),
         params: [
-          {
-            type: "StringLiteral",
-            value: expression.openingElement.name.name,
-            original: expression.openingElement.name.name,
-            loc: null
-          }
+          b.string(expression.openingElement.name.name)
         ],
         hash: bHash(expression.openingElement.attributes.map((attr) => cast(attr, expression)).filter((el)=>el.type === 'AttrNode').map((el)=>{
-          return {
-            type: "HashPair",
-            key: el.name,
-            value: maybeUnwrapSubExpression(maybeTextNodeToStringLiteral(maybeMustacheStatementToSubExpression(el.value)))
-          }
+          return b.pair(
+            el.name,
+            maybeUnwrapSubExpression(maybeTextNodeToStringLiteral(maybeMustacheStatementToSubExpression(el.value)))
+          );
         }))
       });
     }
@@ -1100,7 +931,7 @@ const casters = {
       if (hasInlineExpression(node.expression)) {
         return addASTNodeStrips({
           type: "MustacheStatement",
-          loc: node.loc,
+          loc: emptyLoc(),
           escaped: true,
           path: operatorToPath(
             expression.operator === "&&" ? "if" : expression.operator
@@ -1112,27 +943,18 @@ const casters = {
           hash: bHash()
         });
       } else if (node.expression.type === "LogicalExpression") {
-        return addASTNodeStrips({
-          type: "BlockStatement",
-          path: operatorToPath(
+        return addASTNodeStrips(
+          b.block(operatorToPath(
             expression.operator === "&&" ? "if" : expression.operator
           ),
-          params: [cast(expression.left, expression)],
-          loc: expression.loc,
-          inverse: null,
-          hash: bHash(),
-          program: toProgram(cast(expression.right, expression))
-        });
+          [cast(expression.left, expression)],
+          bHash(),
+          b.blockItself(toProgram(cast(expression.right, expression)))
+          ));
       }
     }
-    let result = {
-      type: "MustacheStatement",
-      loc: node.loc,
-      escaped: true,
-      path: null,
-      params: [],
-      hash: bHash()
-    };
+    let result = b.mustache('empty');
+    
     if (expression.type === "CallExpression") {
       if (
         expression.arguments.length &&
@@ -1175,20 +997,14 @@ const casters = {
           // ];
           return addASTNodeStrips({
             type: "BlockStatement",
-            path: {
-              type: "PathExpression",
-              original: "each-in",
-              this: false,
-              parts: ["each-in"],
-              data: false
-            },
+            path: b.path("each-in"),
             params: [
               cast(
                 expression.callee.object.arguments[0],
                 expression.callee.object
               )
             ],
-            loc: expression.loc,
+            loc: emptyLoc(),
             inverse: null,
             hash: bHash(),
             program: toProgram(cast(expression.arguments[0], expression))
@@ -1200,14 +1016,7 @@ const casters = {
           }
           maybeProgramm.body = maybeProgramm.body.map(el=>{
             if (el.type === "PathExpression") {
-              return addASTNodeStrips({
-                  type: "MustacheStatement",
-                  hash: bHash(),
-                  path: el,
-                  params: [],
-                  loc: null,
-                  escaped: true
-              })
+              return addASTNodeStrips(b.mustache(el))
             } else {
               return el;
             }
@@ -1216,7 +1025,7 @@ const casters = {
             type: "BlockStatement",
             path: pathExpressionFromParam(cast(expression, node)),
             params: [cleanupBlockParam(cast(expression, node))],
-            loc: expression.loc,
+            loc: emptyLoc(),
             inverse: null,
             hash: bHash(),
             program: toProgram(maybeProgramm)
@@ -1244,7 +1053,7 @@ const casters = {
     return casters["StringLiteral"](node);
   },
   JSXEmptyExpression(node) {
-    return { type: "TextNode", chars: "", loc: node.loc };
+    return b.text('');
   },
   ClassMethod(node) {
     node.params.forEach(param => {
@@ -1291,35 +1100,18 @@ const casters = {
         "VariableDeclarator"
       ]) || (createdParent.type === 'SubExpression' || createdParent.type === 'PathExpression')
     ) {
-      return {
-        type: "StringLiteral",
-        value: node.value,
-        original: node.value,
-        loc: node.loc
-      };
+      return b.string(node.value);
     }
-    return {
-      type: "TextNode",
-      chars: node.value,
-      loc: node.loc
-    };
+    return b.text(node.value);
   },
   SequenceExpression(node, parent) {
     return node.expressions.map(exp => cast(exp, node));
   },
   JSXAttribute(node, parent) {
-    let result = {
-      type: "AttrNode",
-      name: cast(node.name),
-      value: cast(node.value, node),
-      loc: node.loc
-    };
+    let result = b.attr(cast(node.name), cast(node.value, node));
 
     if (node.value === null && result.name !== 'attributes') {
-      result.value = {
-        type: 'TextNode',
-        chars: ''
-      }
+      result.value = b.text('');
       return result;
     }
 
@@ -1338,17 +1130,10 @@ const casters = {
       }
       return addASTNodeStrips({
         type: "ElementModifierStatement",
-        path: {
-          type: "PathExpression",
-          original: modName,
-          this: false,
-          parts: [modName],
-          data: false,
-          loc: null
-        },
+        path: b.path(modName),
         params: Array.isArray(result.value) ? result.value : [result.value],
         hash: bHash(),
-        loc: node.loc
+        loc: emptyLoc()
       });
     }
 
@@ -1374,12 +1159,7 @@ const casters = {
           type: "ElementModifierStatement",
           path: operatorToPath("on"),
           params: [
-            {
-              type: "StringLiteral",
-              loc: null,
-              value: eventName,
-              original: eventName
-            },
+            b.string(eventName),
             patternMatch(node.value, {
               type: "JSXExpressionContainer",
               expression: {
@@ -1393,7 +1173,7 @@ const casters = {
               : result.value.path
           ],
           hash: bHash(),
-          loc: node.loc
+          loc: emptyLoc()
         };
       } else {
         result.name = result.name.toLowerCase();
@@ -1401,7 +1181,7 @@ const casters = {
     }
 
     if (result.value === null) {
-      result.value = cast({ type: "StringLiteral", value: "", loc: null });
+      result.value = cast({ type: "StringLiteral", value: "", loc: emptyLoc() });
     }
 
     if (result.value && result.value.type === "MustacheStatement") {
@@ -1422,22 +1202,14 @@ const casters = {
       this: true,
       parts: [],
       data: false,
-      loc: node.loc
+      loc: emptyLoc()
     };
   },
   JSXElement(node, parent) {
     const head = node.openingElement;
-    let newNode = {
-      type: "ElementNode",
-      tag: head.name.name,
-      selfClosing: head.selfClosing,
-      attributes: [],
-      modifiers: [],
-      comments: [],
-      blockParams: [],
-      children: [],
-      loc: node.loc
-    };
+    let newNode = b.element(head.name.name, {
+      loc: emptyLoc(),
+    });
 
     head.attributes.forEach(attr => {
       if (attr.type === 'JSXSpreadAttribute') {
@@ -1473,13 +1245,17 @@ const casters = {
     newNode.children = node.children.map(el => cast(el, node));
     decreaseScope(newNode.blockParams);
 
+
+    if (head.name.name.toLowerCase() !== head.name.name) {
+      if (!['input', 'img'].includes(head.name.name)) {
+        newNode.selfClosing = true;
+      }
+    } else if (!newNode.children.length && !newNode.blockParams.length) {
+      node.selfClosing = true;
+    }
+
     if (parent && parent.type === "ReturnStatement") {
-      return {
-        type: "Template",
-        body: [newNode],
-        blockParams: [],
-        loc: parent.loc
-      };
+      return b.template([newNode]);
     }
 
     return newNode;
