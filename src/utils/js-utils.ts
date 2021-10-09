@@ -4,6 +4,21 @@ import { join, sep } from "path";
 import { existsSync } from "fs";
 import { serializePath, normalizePath } from "./file-utils";
 
+import * as presetEnv from "@babel/preset-env";
+import * as presetTypeScript from "@babel/preset-typescript";
+
+import * as proposalDecorators from "@babel/plugin-proposal-decorators";
+import * as proposalClassProperties from "@babel/plugin-proposal-class-properties";
+import * as proposalObjectRestSpread from "@babel/plugin-proposal-object-rest-spread";
+import * as proposalOptionalChaining from "@babel/plugin-proposal-optional-chaining";
+import * as proposalNullishCoalescingOperator from "@babel/plugin-proposal-nullish-coalescing-operator";
+import * as proposalNumericSeparator from "@babel/plugin-proposal-numeric-separator";
+import * as proposalLogicalAssignmentOperators from "@babel/plugin-proposal-logical-assignment-operators";
+import * as proposalPrivateMethods from "@babel/plugin-proposal-private-methods";
+import * as proposalAsyncGeneratorFunctions from "@babel/plugin-proposal-async-generator-functions";
+import * as proposalFunctionSent from "@babel/plugin-proposal-function-sent";
+import * as proposalDoExpressions from "@babel/plugin-proposal-do-expressions";
+
 export interface IJsMeta {
   actions: string[];
   imports: string[];
@@ -304,19 +319,22 @@ function resetJSMeta() {
 }
 
 const babelOptions = {
-  presets: ["@babel/typescript"],
+  presets: [
+    presetEnv,
+    presetTypeScript
+  ],
   plugins: [
-    ["@babel/plugin-proposal-decorators", { legacy: true }],
-    ["@babel/proposal-class-properties", { loose: true }],
-    "@babel/proposal-object-rest-spread",
-    "@babel/plugin-proposal-optional-chaining",
-    "@babel/plugin-proposal-nullish-coalescing-operator",
-    "@babel/plugin-proposal-numeric-separator",
-    "@babel/plugin-proposal-logical-assignment-operators",
-    "@babel/plugin-proposal-private-methods",
-    "@babel/plugin-proposal-async-generator-functions",
-    "@babel/plugin-proposal-function-sent",
-    "@babel/plugin-proposal-do-expressions"
+    [proposalDecorators, { legacy: true }],
+    [proposalClassProperties, { loose: true }],
+    proposalObjectRestSpread,
+    proposalOptionalChaining,
+    proposalNullishCoalescingOperator,
+    proposalNumericSeparator,
+    proposalLogicalAssignmentOperators,
+    proposalPrivateMethods,
+    proposalAsyncGeneratorFunctions,
+    proposalFunctionSent,
+    proposalDoExpressions
   ],
   sourceType: "module",
   // parserOpts: {

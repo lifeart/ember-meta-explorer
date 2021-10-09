@@ -8,7 +8,7 @@ const processJSFile = utils.processJSFile;
 const parseScriptFile = utils.parseScriptFile;
 
 it('can export some props', () => {
-	assert(Object.keys(utils), ['parseScriptFile', 'processJSFile']);
+	assert(Object.keys(utils).sort(), ['parseScriptFile', 'processJSFile'].sort());
 });
 
 it('can handle basic js component', () => {
