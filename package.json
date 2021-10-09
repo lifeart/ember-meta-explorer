@@ -1,6 +1,6 @@
 {
 	"name": "ember-meta-explorer",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Statically analyzes ember project source for dependency trees and other information.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -58,7 +58,6 @@
 		"@babel/plugin-proposal-async-generator-functions": "^7.15.8",
 		"@babel/plugin-proposal-function-sent": "^7.14.5",
 		"@babel/plugin-proposal-do-expressions": "^7.14.5",
-		"@babel/preset-env": "^7.15.8",
 		"@babel/preset-typescript": "^7.15.0",
 		"@glimmer/syntax": "0.82.0"
 	}

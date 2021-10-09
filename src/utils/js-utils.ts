@@ -4,7 +4,6 @@ import { join, sep } from "path";
 import { existsSync } from "fs";
 import { serializePath, normalizePath } from "./file-utils";
 
-import * as presetEnv from "@babel/preset-env";
 import * as presetTypeScript from "@babel/preset-typescript";
 
 import * as proposalDecorators from "@babel/plugin-proposal-decorators";
@@ -320,7 +319,6 @@ function resetJSMeta() {
 
 const babelOptions = {
   presets: [
-    presetEnv,
     presetTypeScript
   ],
   plugins: [
