@@ -46,12 +46,12 @@ it("can hanldle ternary expressions", () => {
 
 it("can handle ternary jsx and string", ()=>{
   const input = `<div>{a ? <br /> : "HelloWorld"}</div>`;
-  assert(toHBS(input), '<div>{{#if this.a}}<br />{{else}}HelloWorld{{/if}}</div>');
+  assert(toHBS(input), '<div>{{#if this.a}}<br>{{else}}HelloWorld{{/if}}</div>');
 });
 
 it("can handle deep ternary jsx", ()=>{
   const input = `<div>{a ? (b ? 1 : <br />) : "HelloWorld"}</div>`;
-  assert(toHBS(input), '<div>{{#if this.a}}{{#if this.b}}1{{else}}<br />{{/if}}{{else}}HelloWorld{{/if}}</div>');
+  assert(toHBS(input), '<div>{{#if this.a}}{{#if this.b}}1{{else}}<br>{{/if}}{{else}}HelloWorld{{/if}}</div>');
 });
 
 it("can handle spread properties assign", ()=> {
@@ -171,7 +171,7 @@ it("can assign component props", () => {
 
 it("keep dom attrs", () => {
   const input = `(<src onClick={this.onClick} />);`;
-  assert(toHBS(input), '<src {{on "click" this.onClick}} />');
+  assert(toHBS(input), '<src {{on "click" this.onClick}}></src>');
 });
 
 it("can handle basic this.props values", () => {
@@ -216,7 +216,7 @@ it("can transform className on html tags", () => {
   const input = `(<img className="Avatar" src={props.user.avatarUrl} alt={props.user.name}/>);`;
   assert(
     toHBS(input),
-    '<img class="Avatar" src={{@user.avatarUrl}} alt={{@user.name}} />'
+    '<img class="Avatar" src={{@user.avatarUrl}} alt={{@user.name}}>'
   );
 });
 

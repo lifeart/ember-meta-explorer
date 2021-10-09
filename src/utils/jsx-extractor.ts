@@ -404,7 +404,7 @@ function cleanupExtractedComponents() {
       let pairs = [];
       resolvedContext.forEach(el => {
         // console.log('el', el, contextItems[el]);
-        const value = JSON.parse(JSON.stringify(contextItems[el]));
+        const value = preprocess(print(contextItems[el]));
         //MustacheStatement
         if (
           value &&
